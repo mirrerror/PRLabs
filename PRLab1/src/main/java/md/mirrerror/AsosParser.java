@@ -58,11 +58,13 @@ public class AsosParser {
                 String priceLabel = article.select("p#pta-product-" + article.id().substring(8) + "-1").attr("aria-label");
 
                 String productPrice;
-                if (priceLabel.contains("current price")) {
+                if (priceLabel.contains("current price")) { // first validation, we don't want to parse the wrong price
                     productPrice = priceLabel.substring(priceLabel.indexOf("current price:")).replaceAll("[^\\d.]", "");
                 } else {
                     productPrice = priceLabel.substring(priceLabel.indexOf("Original price:")).replaceAll("[^\\d.]", "");
                 }
+
+                if(productName.toLowerCase().contains("baggy")) continue; // second validation, I don't quite like baggy clothes
 
 //                System.out.println("price label: " + priceLabel + "; parsed price: " + productPrice);
 
