@@ -1,6 +1,5 @@
 package md.mirrerror;
 
-import java.io.IOException;
 import java.util.List;
 
 public class Main {
@@ -10,7 +9,7 @@ public class Main {
     private static final String URL_PATH = "/men/sale/cat/?cid=8409&ctaref=hp|mw|promo|banner|1|edit|saleupto70offmss";
     private static final String FULL_URL = PROTOCOL + HOSTNAME + URL_PATH;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
 //        System.out.println("GET request to asos.com:\n");
 //        System.out.println(RequestUtils.doGetRequest(FULL_URL));
 //
