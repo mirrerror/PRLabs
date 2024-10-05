@@ -4,34 +4,40 @@ import java.io.IOException;
 import java.util.List;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
-        AsosParser asosParser = new AsosParser("https://www.asos.com/men/sale/cat/?cid=8409&ctaref=hp|mw|promo|banner|1|edit|saleupto70offmss");
-        List<Product> products = asosParser.parse();
 
-        System.out.println("All the products:\n");
-        for(Product product : products) {
-            System.out.println(product.getName() + " - " + product.getPriceInGbp() + " GBP - " + product.getPriceInMdl() + " MDL - " + product.getUrl());
-        }
+    private static final String PROTOCOL = "https://";
+    private static final String HOSTNAME = "www.asos.com";
+    private static final String URL_PATH = "/men/sale/cat/?cid=8409&ctaref=hp|mw|promo|banner|1|edit|saleupto70offmss";
+    private static final String FULL_URL = PROTOCOL + HOSTNAME + URL_PATH;
+
+    public static void main(String[] args) throws IOException {
+//        System.out.println("GET request to asos.com:\n");
+//        System.out.println(RequestUtils.doGetRequest(FULL_URL));
+//
+//        System.out.print("\n\n\n");
+//
+//        System.out.println("GET request to asos.com using socket:\n");
+//        System.out.println(RequestUtils.doGetRequestUsingSocket(HOSTNAME, URL_PATH));
+//
+//        System.out.print("\n\n\n");
+
+        AsosParser asosParser = new AsosParser(HOSTNAME, URL_PATH);
+        List<Product> products = asosParser.parse();
+        List<Product> fiveFirstProducts = products.subList(0, 5);
+
+        System.out.println(Product.listToJson(fiveFirstProducts));
+        System.out.print("\n\n");
+        System.out.println(Product.listToXml(fiveFirstProducts));
 
         System.out.print("\n\n\n");
 
         ProductFilter productFilter = new ProductFilter();
         List<FilteredProduct> filteredProducts = productFilter.selectProducts(products, 10, 50);
+        List<FilteredProduct> fiveFirstFilteredProducts = filteredProducts.subList(0, 5);
 
-        System.out.println("Filtered products:\n");
-        for(FilteredProduct filteredProduct : filteredProducts) {
-            System.out.println(filteredProduct.getName() + " - " + filteredProduct.getPriceInGbp() + " GBP - " + filteredProduct.getPriceInMdl() + " MDL - " + filteredProduct.getUrl() + " - " + filteredProduct.getCreatedAt());
-        }
-
-        System.out.print("\n\n\n");
-
-        System.out.println("GET request to asos.com:\n");
-        RequestUtils.doGetRequest();
-
-        System.out.print("\n\n\n");
-
-        System.out.println("GET request to asos.com using socket:\n");
-        RequestUtils.doGetRequestUsingSocket();
+        System.out.println(FilteredProduct.filteredProductsListToJson(fiveFirstFilteredProducts));
+        System.out.print("\n\n");
+        System.out.println(FilteredProduct.filteredProductsListToXml(fiveFirstFilteredProducts));
 
         System.out.print("\n\n\n");
 

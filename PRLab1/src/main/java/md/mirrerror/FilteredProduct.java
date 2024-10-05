@@ -2,6 +2,8 @@ package md.mirrerror;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class FilteredProduct extends Product {
     private double priceSumInGbp;
@@ -45,6 +47,31 @@ public class FilteredProduct extends Product {
                 getName(), getPriceInGbp(), getPriceInMdl(), getUrl(), priceSumInGbp, priceSumInMdl, createdAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
     }
 
+    public static String filteredProductsListToJson(List<FilteredProduct> filteredProducts) {
+        double totalPriceInGbp = filteredProducts.stream().mapToDouble(FilteredProduct::getPriceInGbp).sum();
+        double totalPriceInMdl = filteredProducts.stream().mapToDouble(FilteredProduct::getPriceSumInMdl).sum();
+        LocalDateTime timestamp = LocalDateTime.now();
+
+        String productJsonList = filteredProducts.stream()
+                .map(FilteredProduct::toJson)
+                .collect(Collectors.joining(",", "[", "]"));
+
+        return String.format("{\"filteredProducts\":%s, \"totalPriceInGbp\":%.2f, \"totalPriceInMdl\":%.2f, \"timestamp\":\"%s\"}",
+                productJsonList, totalPriceInGbp, totalPriceInMdl, timestamp);
+    }
+
+    public static String filteredProductsListToXml(List<FilteredProduct> filteredProducts) {
+        double totalPriceInGbp = filteredProducts.stream().mapToDouble(FilteredProduct::getPriceInGbp).sum();
+        double totalPriceInMdl = filteredProducts.stream().mapToDouble(FilteredProduct::getPriceSumInMdl).sum();
+        LocalDateTime timestamp = LocalDateTime.now();
+
+        String productXmlList = filteredProducts.stream()
+                .map(FilteredProduct::toXml)
+                .collect(Collectors.joining());
+
+        return String.format("<FilteredProducts><TotalPriceInGbp>%.2f</TotalPriceInGbp><TotalPriceInMdl>%.2f</TotalPriceInMdl><Timestamp>%s</Timestamp>%s</FilteredProducts>",
+                totalPriceInGbp, totalPriceInMdl, timestamp, productXmlList);
+    }
 
     @Override
     public byte[] serialize() {
