@@ -6,29 +6,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class FilteredProduct extends Product {
-    private double priceSumInGbp;
-    private double priceSumInMdl;
     private LocalDateTime createdAt;
 
-    public FilteredProduct(String name, String url, double priceInGbp) {
-        super(name, url, priceInGbp);
+    public FilteredProduct(String name, String url, String productDetails, double priceInGbp) {
+        super(name, url, productDetails, priceInGbp);
         this.createdAt = LocalDateTime.now();
-    }
-
-    public double getPriceSumInGbp() {
-        return priceSumInGbp;
-    }
-
-    public void setPriceSumInGbp(double priceSumInGbp) {
-        this.priceSumInGbp = priceSumInGbp;
-    }
-
-    public double getPriceSumInMdl() {
-        return priceSumInMdl;
-    }
-
-    public void setPriceSumInMdl(double priceSumInMdl) {
-        this.priceSumInMdl = priceSumInMdl;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -37,19 +19,19 @@ public class FilteredProduct extends Product {
 
     @Override
     public String toJson() {
-        return String.format("{\"name\":\"%s\", \"priceInGbp\":%.2f, \"priceInMdl\":%.2f, \"url\":\"%s\", \"priceSumInGbp\":%.2f, \"priceSumInMdl\":%.2f, \"createdAt\":\"%s\"}",
-                getName(), getPriceInGbp(), getPriceInMdl(), getUrl(), priceSumInGbp, priceSumInMdl, createdAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        return String.format("{\"name\":\"%s\", \"priceInGbp\":%.2f, \"priceInMdl\":%.2f, \"url\":\"%s\", \"productDetails\":\"%s\", \"createdAt\":\"%s\"}",
+                getName(), getPriceInGbp(), getPriceInMdl(), getUrl(), getProductDetails(), createdAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
     }
 
     @Override
     public String toXml() {
-        return String.format("<FilteredProduct><Name>%s</Name><PriceInGbp>%.2f</PriceInGbp><PriceInMdl>%.2f</PriceInMdl><Url>%s</Url><PriceSumInGbp>%.2f</PriceSumInGbp><PriceSumInMdl>%.2f</PriceSumInMdl><CreatedAt>%s</CreatedAt></FilteredProduct>",
-                getName(), getPriceInGbp(), getPriceInMdl(), getUrl(), priceSumInGbp, priceSumInMdl, createdAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        return String.format("<FilteredProduct><Name>%s</Name><PriceInGbp>%.2f</PriceInGbp><PriceInMdl>%.2f</PriceInMdl><Url>%s</Url><ProductDetails>%s</ProductDetails><CreatedAt>%s</CreatedAt></FilteredProduct>",
+                getName(), getPriceInGbp(), getPriceInMdl(), getUrl(), getProductDetails().replace("&", "&amp;"), createdAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
     }
 
     public static String filteredProductsListToJson(List<FilteredProduct> filteredProducts) {
         double totalPriceInGbp = filteredProducts.stream().mapToDouble(FilteredProduct::getPriceInGbp).sum();
-        double totalPriceInMdl = filteredProducts.stream().mapToDouble(FilteredProduct::getPriceSumInMdl).sum();
+        double totalPriceInMdl = filteredProducts.stream().mapToDouble(FilteredProduct::getPriceInMdl).sum();
         LocalDateTime timestamp = LocalDateTime.now();
 
         String productJsonList = filteredProducts.stream()
@@ -62,7 +44,7 @@ public class FilteredProduct extends Product {
 
     public static String filteredProductsListToXml(List<FilteredProduct> filteredProducts) {
         double totalPriceInGbp = filteredProducts.stream().mapToDouble(FilteredProduct::getPriceInGbp).sum();
-        double totalPriceInMdl = filteredProducts.stream().mapToDouble(FilteredProduct::getPriceSumInMdl).sum();
+        double totalPriceInMdl = filteredProducts.stream().mapToDouble(FilteredProduct::getPriceInMdl).sum();
         LocalDateTime timestamp = LocalDateTime.now();
 
         String productXmlList = filteredProducts.stream()
@@ -80,8 +62,7 @@ public class FilteredProduct extends Product {
         serializedData.append("priceInGbp=").append(getPriceInGbp()).append(";");
         serializedData.append("priceInMdl=").append(getPriceInMdl()).append(";");
         serializedData.append("url=").append(getUrl()).append(";");
-        serializedData.append("priceSumInGbp=").append(priceSumInGbp).append(";");
-        serializedData.append("priceSumInMdl=").append(priceSumInMdl).append(";");
+        serializedData.append("productDetails=").append(getProductDetails()).append(";");
         serializedData.append("createdAt=").append(createdAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append(";");
         serializedData.append("|");
         return serializedData.toString().getBytes();
@@ -92,29 +73,24 @@ public class FilteredProduct extends Product {
         String name = null;
         double priceInGbp = 0;
         String url = null;
-        double priceSumInGbp = 0;
-        double priceSumInMdl = 0;
         LocalDateTime createdAt = null;
+        String productDetails = null;
 
         for (String field : fields) {
             if (field.startsWith("name=")) {
                 name = field.substring(5);
             } else if (field.startsWith("priceInGbp=")) {
-                priceInGbp = Double.parseDouble(field.substring(12));
+                priceInGbp = Double.parseDouble(field.substring(11));
             } else if (field.startsWith("url=")) {
                 url = field.substring(4);
-            } else if (field.startsWith("priceSumInGbp=")) {
-                priceSumInGbp = Double.parseDouble(field.substring(15));
-            } else if (field.startsWith("priceSumInMdl=")) {
-                priceSumInMdl = Double.parseDouble(field.substring(15));
+            } else if (field.startsWith("productDetails=")) {
+                productDetails = field.substring(15);
             } else if (field.startsWith("createdAt=")) {
                 createdAt = LocalDateTime.parse(field.substring(10), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
             }
         }
 
-        FilteredProduct filteredProduct = new FilteredProduct(name, url, priceInGbp);
-        filteredProduct.setPriceSumInGbp(priceSumInGbp);
-        filteredProduct.setPriceSumInMdl(priceSumInMdl);
+        FilteredProduct filteredProduct = new FilteredProduct(name, url, productDetails, priceInGbp);
         filteredProduct.createdAt = createdAt;
 
         return filteredProduct;
@@ -127,8 +103,7 @@ public class FilteredProduct extends Product {
                 ", priceInGbp=" + getPriceInGbp() +
                 ", priceInMdl=" + getPriceInMdl() +
                 ", url='" + getUrl() + '\'' +
-                ", priceSumInGbp=" + priceSumInGbp +
-                ", priceSumInMdl=" + priceSumInMdl +
+                ", productDetails='" + getProductDetails() + '\'' +
                 ", createdAt=" + createdAt +
                 '}';
     }

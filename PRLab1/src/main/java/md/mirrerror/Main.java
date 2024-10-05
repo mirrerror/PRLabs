@@ -20,7 +20,7 @@ public class Main {
 //
 //        System.out.print("\n\n\n");
 
-        AsosParser asosParser = new AsosParser(HOSTNAME, URL_PATH);
+        AsosParser asosParser = new AsosParser(PROTOCOL, HOSTNAME, URL_PATH);
         List<Product> products = asosParser.parse();
         List<Product> fiveFirstProducts = products.subList(0, 5);
 

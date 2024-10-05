@@ -9,10 +9,12 @@ public class Product {
     private double priceInGbp;
     private double priceInMdl;
     private String url;
+    private String productDetails;
 
-    public Product(String name, String url, double priceInGbp) {
+    public Product(String name, String url, String productDetails, double priceInGbp) {
         this.name = name;
         this.url = url;
+        this.productDetails = productDetails;
         this.priceInGbp = priceInGbp;
         this.priceInMdl = priceInGbp * 22.96;
     }
@@ -49,14 +51,22 @@ public class Product {
         this.url = url;
     }
 
+    public String getProductDetails() {
+        return productDetails;
+    }
+
+    public void setProductDetails(String productDetails) {
+        this.productDetails = productDetails;
+    }
+
     public String toJson() {
-        return String.format("{\"name\":\"%s\", \"priceInGbp\":%.2f, \"priceInMdl\":%.2f, \"url\":\"%s\"}",
-                name, priceInGbp, priceInMdl, url);
+        return String.format("{\"name\":\"%s\", \"priceInGbp\":%.2f, \"priceInMdl\":%.2f, \"url\":\"%s\", \"productDetails\":\"%s\"}",
+                name, priceInGbp, priceInMdl, url, productDetails);
     }
 
     public String toXml() {
-        return String.format("<Product><Name>%s</Name><PriceInGbp>%.2f</PriceInGbp><PriceInMdl>%.2f</PriceInMdl><Url>%s</Url></Product>",
-                name, priceInGbp, priceInMdl, url);
+        return String.format("<Product><Name>%s</Name><PriceInGbp>%.2f</PriceInGbp><PriceInMdl>%.2f</PriceInMdl><Url>%s</Url><ProductDetails>%s</ProductDetails></Product>",
+                name, priceInGbp, priceInMdl, url, productDetails.replace("&", "&amp;"));
     }
 
     public static String listToJson(List<Product> products) {
@@ -91,6 +101,7 @@ public class Product {
         serializedData.append("priceInGbp=").append(priceInGbp).append(";");
         serializedData.append("priceInMdl=").append(priceInMdl).append(";");
         serializedData.append("url=").append(url).append(";");
+        serializedData.append("productDetails=").append(productDetails).append(";");
         serializedData.append("|");
         return serializedData.toString().getBytes();
     }
@@ -100,6 +111,7 @@ public class Product {
         String name = null;
         double priceInGbp = 0;
         String url = null;
+        String productDetails = null;
 
         for (String field : fields) {
             if (field.startsWith("name=")) {
@@ -108,10 +120,12 @@ public class Product {
                 priceInGbp = Double.parseDouble(field.substring(12));
             } else if (field.startsWith("url=")) {
                 url = field.substring(4);
+            } else if (field.startsWith("productDetails=")) {
+                productDetails = field.substring(15);
             }
         }
 
-        return new Product(name, url, priceInGbp);
+        return new Product(name, url, productDetails, priceInGbp);
     }
 
     @Override
@@ -121,6 +135,7 @@ public class Product {
                 ", priceInGbp=" + priceInGbp +
                 ", priceInMdl=" + priceInMdl +
                 ", url='" + url + '\'' +
+                ", productDetails='" + productDetails + '\'' +
                 '}';
     }
 }
