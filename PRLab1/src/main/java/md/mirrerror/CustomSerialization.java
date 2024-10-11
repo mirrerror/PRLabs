@@ -57,7 +57,7 @@ public class CustomSerialization {
                 serializedData.append(field.getName()).append("=").append(value).append(";");
             }
 
-        } catch (IllegalAccessException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Error during serialization: " + e.getMessage(), e);
         }
     }
