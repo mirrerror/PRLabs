@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 public class Product {
 
-    private final static double GBP_TO_MDL_EXCHANGE_RATE = 22.96;
+    private static final double GBP_TO_MDL_EXCHANGE_RATE = 22.96;
 
     private String name;
     private double priceInGbp;
