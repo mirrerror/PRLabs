@@ -30,18 +30,14 @@ public class CustomSerialization {
             }
         }
 
-        try {
+        deserializeFields(object, fieldValues, clazz);
 
-            deserializeFields(object, fieldValues, clazz);
-            return object;
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error during deserialization: " + e.getMessage(), e);
-        }
+        return object;
     }
 
     private static void serializeFields(Object obj, StringBuilder serializedData, Class<?> clazz) {
         try {
+
             if (clazz.getSuperclass() != null) {
                 serializeFields(obj, serializedData, clazz.getSuperclass());
             }
@@ -66,31 +62,37 @@ public class CustomSerialization {
         }
     }
 
-    private static void deserializeFields(Object obj, Map<String, String> fieldValues, Class<?> clazz) throws Exception {
-        if (clazz.getSuperclass() != null) {
-            deserializeFields(obj, fieldValues, clazz.getSuperclass());
-        }
+    private static void deserializeFields(Object obj, Map<String, String> fieldValues, Class<?> clazz) {
+        try {
 
-        Field[] fields = clazz.getDeclaredFields();
-
-        for (Field field : fields) {
-            if (Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())) {
-                continue;
+            if (clazz.getSuperclass() != null) {
+                deserializeFields(obj, fieldValues, clazz.getSuperclass());
             }
 
-            field.setAccessible(true);
-            String fieldName = field.getName();
-            String fieldValue = fieldValues.get(fieldName);
+            Field[] fields = clazz.getDeclaredFields();
 
-            if (fieldValue != null) {
-                if (field.getType() == double.class) {
-                    field.set(obj, Double.parseDouble(fieldValue));
-                } else if (field.getType() == LocalDateTime.class) {
-                    field.set(obj, LocalDateTime.parse(fieldValue, DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-                } else {
-                    field.set(obj, fieldValue);
+            for (Field field : fields) {
+                if (Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())) {
+                    continue;
+                }
+
+                field.setAccessible(true);
+                String fieldName = field.getName();
+                String fieldValue = fieldValues.get(fieldName);
+
+                if (fieldValue != null) {
+                    if (field.getType() == double.class) {
+                        field.set(obj, Double.parseDouble(fieldValue));
+                    } else if (field.getType() == LocalDateTime.class) {
+                        field.set(obj, LocalDateTime.parse(fieldValue, DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                    } else {
+                        field.set(obj, fieldValue);
+                    }
                 }
             }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error during deserialization: " + e.getMessage(), e);
         }
     }
 
