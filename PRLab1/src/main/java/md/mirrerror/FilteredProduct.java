@@ -3,6 +3,7 @@ package md.mirrerror;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class FilteredProduct extends Product {
@@ -60,6 +61,22 @@ public class FilteredProduct extends Product {
 
     public static FilteredProduct deserialize(byte[] data) {
         return (FilteredProduct) CustomSerialization.deserialize(new FilteredProduct(), FilteredProduct.class, data);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        FilteredProduct product = (FilteredProduct) object;
+        return Double.compare(super.getPriceInGbp(), product.getPriceInGbp()) == 0
+                && Objects.equals(super.getName(), product.getName())
+                && Objects.equals(super.getUrl(), product.getUrl())
+                && Objects.equals(createdAt, product.getCreatedAt());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.getName(), super.getPriceInGbp(), super.getUrl(), createdAt);
     }
 
     @Override

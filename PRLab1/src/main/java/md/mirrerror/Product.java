@@ -2,6 +2,7 @@ package md.mirrerror;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class Product {
@@ -102,6 +103,19 @@ public class Product {
 
     public static Product deserialize(byte[] data) {
         return (Product) CustomSerialization.deserialize(new Product(), Product.class, data);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        Product product = (Product) object;
+        return Double.compare(priceInGbp, product.priceInGbp) == 0 && Objects.equals(name, product.name) && Objects.equals(url, product.url);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, priceInGbp, url);
     }
 
     @Override

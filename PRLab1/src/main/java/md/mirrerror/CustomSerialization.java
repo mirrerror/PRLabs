@@ -1,6 +1,7 @@
 package md.mirrerror;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -48,6 +49,10 @@ public class CustomSerialization {
             Field[] fields = clazz.getDeclaredFields();
 
             for (Field field : fields) {
+                if (Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())) {
+                    continue;
+                }
+
                 field.setAccessible(true);
                 Object value = field.get(obj);
                 if (value instanceof LocalDateTime) {
@@ -69,6 +74,10 @@ public class CustomSerialization {
         Field[] fields = clazz.getDeclaredFields();
 
         for (Field field : fields) {
+            if (Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())) {
+                continue;
+            }
+
             field.setAccessible(true);
             String fieldName = field.getName();
             String fieldValue = fieldValues.get(fieldName);
