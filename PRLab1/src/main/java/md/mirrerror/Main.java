@@ -7,7 +7,7 @@ public class Main {
     private static final String PROTOCOL = "https://";
     private static final String HOSTNAME = "www.asos.com";
     private static final String URL_PATH = "/men/sale/cat/?cid=8409&ctaref=hp|mw|promo|banner|1|edit|saleupto70offmss";
-    private static final String FULL_URL = PROTOCOL + HOSTNAME + URL_PATH;
+//    private static final String FULL_URL = PROTOCOL + HOSTNAME + URL_PATH;
 
     public static void main(String[] args) {
 //        System.out.println("GET request to asos.com:\n");
@@ -21,18 +21,19 @@ public class Main {
 //        System.out.print("\n\n\n");
 
         AsosParser asosParser = new AsosParser(PROTOCOL, HOSTNAME, URL_PATH);
+        ProductFilter productFilter = new ProductFilter();
+
         List<Product> products = asosParser.parse();
+        List<FilteredProduct> filteredProducts = productFilter.selectProducts(products, 10, 50);
+
         List<Product> fiveFirstProducts = products.subList(0, 5);
+        List<FilteredProduct> fiveFirstFilteredProducts = filteredProducts.subList(0, 5);
 
         System.out.println(Product.listToJson(fiveFirstProducts));
         System.out.print("\n\n");
         System.out.println(Product.listToXml(fiveFirstProducts));
 
         System.out.print("\n\n\n");
-
-        ProductFilter productFilter = new ProductFilter();
-        List<FilteredProduct> filteredProducts = productFilter.selectProducts(products, 10, 50);
-        List<FilteredProduct> fiveFirstFilteredProducts = filteredProducts.subList(0, 5);
 
         System.out.println(FilteredProduct.filteredProductsListToJson(fiveFirstFilteredProducts));
         System.out.print("\n\n");
@@ -52,13 +53,16 @@ public class Main {
         System.out.print("\n\n\n");
 
         System.out.println("Custom serialization and deserialization:\n");
-        System.out.print(new String(products.get(0).serialize()));
+        byte[] serializedProduct = products.get(0).serialize();
+        byte[] serializedFilteredProduct = filteredProducts.get(0).serialize();
+
+        System.out.print(new String(serializedProduct));
         System.out.print("\n\n");
-        System.out.print(Product.deserialize(products.get(0).serialize()));
+        System.out.print(Product.deserialize(serializedProduct));
         System.out.print("\n\n");
-        System.out.println(new String(filteredProducts.get(0).serialize()));
+        System.out.println(new String(serializedFilteredProduct));
         System.out.print("\n\n");
-        System.out.print(FilteredProduct.deserialize(filteredProducts.get(0).serialize()));
+        System.out.print(FilteredProduct.deserialize(serializedFilteredProduct));
     }
 
 }
