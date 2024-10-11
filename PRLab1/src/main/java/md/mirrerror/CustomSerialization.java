@@ -11,7 +11,7 @@ public class CustomSerialization {
 
     public static byte[] serialize(Object object, Class<?> clazz) {
         StringBuilder serializedData = new StringBuilder();
-        CustomSerialization.serializeFields(object, serializedData, clazz);
+        serializeFields(object, serializedData, clazz);
         serializedData.append("|");
         return serializedData.toString().getBytes(StandardCharsets.UTF_8);
     }
@@ -31,7 +31,7 @@ public class CustomSerialization {
 
         try {
 
-            CustomSerialization.deserializeFields(object, fieldValues, clazz);
+            deserializeFields(object, fieldValues, clazz);
             return object;
 
         } catch (Exception e) {
