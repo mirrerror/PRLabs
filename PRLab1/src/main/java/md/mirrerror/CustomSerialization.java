@@ -1,11 +1,43 @@
 package md.mirrerror;
 
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 
 public class CustomSerialization {
+
+    public static byte[] serialize(Object object, Class<?> clazz) {
+        StringBuilder serializedData = new StringBuilder();
+        CustomSerialization.serializeFields(object, serializedData, clazz);
+        serializedData.append("|");
+        return serializedData.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    public static Object deserialize(Object object, Class<?> clazz, byte[] data) {
+        Map<String, String> fieldValues = new HashMap<>();
+        String[] fields = new String(data, StandardCharsets.UTF_8).split(";");
+
+        for (String field : fields) {
+            if (!field.equals("|") && field.contains("=")) {
+                String[] keyValue = field.split("=", 2);
+                if (keyValue.length == 2) {
+                    fieldValues.put(keyValue[0], keyValue[1]);
+                }
+            }
+        }
+
+        try {
+
+            CustomSerialization.deserializeFields(object, fieldValues, clazz);
+            return object;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error during deserialization: " + e.getMessage(), e);
+        }
+    }
 
     public static void serializeFields(Object obj, StringBuilder serializedData, Class<?> clazz) {
         try {

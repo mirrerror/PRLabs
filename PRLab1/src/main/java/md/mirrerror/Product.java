@@ -1,8 +1,6 @@
 package md.mirrerror;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -13,6 +11,8 @@ public class Product {
     private double priceInMdl;
     private String url;
     private String productDetails;
+
+    public Product() {}
 
     public Product(String name, String url, String productDetails, double priceInGbp) {
         this.name = name;
@@ -99,40 +99,11 @@ public class Product {
     }
 
     public byte[] serialize() {
-        StringBuilder serializedData = new StringBuilder();
-        CustomSerialization.serializeFields(this, serializedData, this.getClass());
-        serializedData.append("|");
-        return serializedData.toString().getBytes(StandardCharsets.UTF_8);
+        return CustomSerialization.serialize(this, this.getClass());
     }
 
     public static Product deserialize(byte[] data) {
-        Map<String, String> fieldValues = new HashMap<>();
-        String[] fields = new String(data, StandardCharsets.UTF_8).split(";");
-
-        for (String field : fields) {
-            if (!field.equals("|") && field.contains("=")) {
-                String[] keyValue = field.split("=", 2);
-                if (keyValue.length == 2) {
-                    fieldValues.put(keyValue[0], keyValue[1]);
-                }
-            }
-        }
-
-        try {
-            Product product = new Product(
-                    fieldValues.get("name"),
-                    fieldValues.get("url"),
-                    fieldValues.get("productDetails"),
-                    Double.parseDouble(fieldValues.get("priceInGbp"))
-            );
-
-            CustomSerialization.deserializeFields(product, fieldValues, product.getClass());
-
-            return product;
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error during deserialization: " + e.getMessage(), e);
-        }
+        return (Product) CustomSerialization.deserialize(new Product(), Product.class, data);
     }
 
     @Override
