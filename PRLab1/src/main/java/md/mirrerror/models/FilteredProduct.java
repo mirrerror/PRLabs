@@ -1,4 +1,6 @@
-package md.mirrerror;
+package md.mirrerror.models;
+
+import md.mirrerror.utils.CustomSerialization;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

@@ -1,5 +1,10 @@
 package md.mirrerror;
 
+import md.mirrerror.filters.ProductFilter;
+import md.mirrerror.models.FilteredProduct;
+import md.mirrerror.models.Product;
+import md.mirrerror.web.AsosParser;
+
 import java.util.List;
 
 public class Main {

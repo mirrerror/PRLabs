@@ -1,4 +1,7 @@
-package md.mirrerror;
+package md.mirrerror.filters;
+
+import md.mirrerror.models.FilteredProduct;
+import md.mirrerror.models.Product;
 
 import java.util.ArrayList;
 import java.util.List;
