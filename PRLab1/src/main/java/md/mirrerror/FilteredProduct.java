@@ -1,8 +1,11 @@
 package md.mirrerror;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class FilteredProduct extends Product {
@@ -58,42 +61,39 @@ public class FilteredProduct extends Product {
     @Override
     public byte[] serialize() {
         StringBuilder serializedData = new StringBuilder();
-        serializedData.append("name=").append(getName()).append(";");
-        serializedData.append("priceInGbp=").append(getPriceInGbp()).append(";");
-        serializedData.append("priceInMdl=").append(getPriceInMdl()).append(";");
-        serializedData.append("url=").append(getUrl()).append(";");
-        serializedData.append("productDetails=").append(getProductDetails()).append(";");
-        serializedData.append("createdAt=").append(createdAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append(";");
+        CustomSerialization.serializeFields(this, serializedData, this.getClass());
         serializedData.append("|");
-        return serializedData.toString().getBytes();
+        return serializedData.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     public static FilteredProduct deserialize(byte[] data) {
-        String[] fields = new String(data).split(";");
-        String name = null;
-        double priceInGbp = 0;
-        String url = null;
-        LocalDateTime createdAt = null;
-        String productDetails = null;
+        Map<String, String> fieldValues = new HashMap<>();
+        String[] fields = new String(data, StandardCharsets.UTF_8).split(";");
 
         for (String field : fields) {
-            if (field.startsWith("name=")) {
-                name = field.substring(5);
-            } else if (field.startsWith("priceInGbp=")) {
-                priceInGbp = Double.parseDouble(field.substring(11));
-            } else if (field.startsWith("url=")) {
-                url = field.substring(4);
-            } else if (field.startsWith("productDetails=")) {
-                productDetails = field.substring(15);
-            } else if (field.startsWith("createdAt=")) {
-                createdAt = LocalDateTime.parse(field.substring(10), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            if (!field.equals("|") && field.contains("=")) {
+                String[] keyValue = field.split("=", 2);
+                if (keyValue.length == 2) {
+                    fieldValues.put(keyValue[0], keyValue[1]);
+                }
             }
         }
 
-        FilteredProduct filteredProduct = new FilteredProduct(name, url, productDetails, priceInGbp);
-        filteredProduct.createdAt = createdAt;
+        try {
+            FilteredProduct filteredProduct = new FilteredProduct(
+                    fieldValues.get("name"),
+                    fieldValues.get("url"),
+                    fieldValues.get("productDetails"),
+                    Double.parseDouble(fieldValues.get("priceInGbp"))
+            );
 
-        return filteredProduct;
+            CustomSerialization.deserializeFields(filteredProduct, fieldValues, filteredProduct.getClass());
+
+            return filteredProduct;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error during deserialization: " + e.getMessage(), e);
+        }
     }
 
     @Override

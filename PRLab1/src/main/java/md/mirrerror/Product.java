@@ -1,7 +1,10 @@
 package md.mirrerror;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Product {
@@ -97,35 +100,39 @@ public class Product {
 
     public byte[] serialize() {
         StringBuilder serializedData = new StringBuilder();
-        serializedData.append("name=").append(name).append(";");
-        serializedData.append("priceInGbp=").append(priceInGbp).append(";");
-        serializedData.append("priceInMdl=").append(priceInMdl).append(";");
-        serializedData.append("url=").append(url).append(";");
-        serializedData.append("productDetails=").append(productDetails).append(";");
+        CustomSerialization.serializeFields(this, serializedData, this.getClass());
         serializedData.append("|");
-        return serializedData.toString().getBytes();
+        return serializedData.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     public static Product deserialize(byte[] data) {
-        String[] fields = new String(data).split(";");
-        String name = null;
-        double priceInGbp = 0;
-        String url = null;
-        String productDetails = null;
+        Map<String, String> fieldValues = new HashMap<>();
+        String[] fields = new String(data, StandardCharsets.UTF_8).split(";");
 
         for (String field : fields) {
-            if (field.startsWith("name=")) {
-                name = field.substring(5);
-            } else if (field.startsWith("priceInGbp=")) {
-                priceInGbp = Double.parseDouble(field.substring(12));
-            } else if (field.startsWith("url=")) {
-                url = field.substring(4);
-            } else if (field.startsWith("productDetails=")) {
-                productDetails = field.substring(15);
+            if (!field.equals("|") && field.contains("=")) {
+                String[] keyValue = field.split("=", 2);
+                if (keyValue.length == 2) {
+                    fieldValues.put(keyValue[0], keyValue[1]);
+                }
             }
         }
 
-        return new Product(name, url, productDetails, priceInGbp);
+        try {
+            Product product = new Product(
+                    fieldValues.get("name"),
+                    fieldValues.get("url"),
+                    fieldValues.get("productDetails"),
+                    Double.parseDouble(fieldValues.get("priceInGbp"))
+            );
+
+            CustomSerialization.deserializeFields(product, fieldValues, product.getClass());
+
+            return product;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error during deserialization: " + e.getMessage(), e);
+        }
     }
 
     @Override
