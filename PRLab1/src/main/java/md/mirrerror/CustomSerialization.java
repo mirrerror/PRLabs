@@ -39,7 +39,7 @@ public class CustomSerialization {
         }
     }
 
-    public static void serializeFields(Object obj, StringBuilder serializedData, Class<?> clazz) {
+    private static void serializeFields(Object obj, StringBuilder serializedData, Class<?> clazz) {
         try {
             if (clazz.getSuperclass() != null) {
                 serializeFields(obj, serializedData, clazz.getSuperclass());
@@ -61,7 +61,7 @@ public class CustomSerialization {
         }
     }
 
-    public static void deserializeFields(Object obj, Map<String, String> fieldValues, Class<?> clazz) throws Exception {
+    private static void deserializeFields(Object obj, Map<String, String> fieldValues, Class<?> clazz) throws Exception {
         if (clazz.getSuperclass() != null) {
             deserializeFields(obj, fieldValues, clazz.getSuperclass());
         }
