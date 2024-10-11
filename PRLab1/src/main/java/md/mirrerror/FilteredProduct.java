@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class FilteredProduct extends Product {
-    private LocalDateTime createdAt;
 
+    private LocalDateTime createdAt;
 
     public FilteredProduct() {}
 
@@ -73,4 +73,5 @@ public class FilteredProduct extends Product {
                 ", createdAt=" + createdAt +
                 '}';
     }
+
 }

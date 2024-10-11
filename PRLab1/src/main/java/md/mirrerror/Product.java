@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Product {
+
+    private final static double GBP_TO_MDL_EXCHANGE_RATE = 22.96;
+
     private String name;
     private double priceInGbp;
     private double priceInMdl;
@@ -17,8 +20,7 @@ public class Product {
         this.name = name;
         this.url = url;
         this.productDetails = productDetails;
-        this.priceInGbp = priceInGbp;
-        this.priceInMdl = priceInGbp * 22.96;
+        setPriceInGbp(priceInGbp);
     }
 
     public String getName() {
@@ -35,14 +37,11 @@ public class Product {
 
     public void setPriceInGbp(double priceInGbp) {
         this.priceInGbp = priceInGbp;
+        this.priceInMdl = priceInGbp * GBP_TO_MDL_EXCHANGE_RATE;
     }
 
     public double getPriceInMdl() {
         return priceInMdl;
-    }
-
-    public void setPriceInMdl(double priceInMdl) {
-        this.priceInMdl = priceInMdl;
     }
 
     public String getUrl() {
@@ -115,4 +114,5 @@ public class Product {
                 ", productDetails='" + productDetails + '\'' +
                 '}';
     }
+
 }
