@@ -59,6 +59,14 @@ public class Main {
         System.out.println(new String(filteredProducts.get(0).serialize()));
         System.out.print("\n\n");
         System.out.print(FilteredProduct.deserialize(filteredProducts.get(0).serialize()));
+
+        System.out.println("\n\n\n");
+
+        System.out.println("Custom serialization and deserialization for lists:\n");
+        byte[] serializedProducts = Product.serializeList(fiveFirstProducts);
+        System.out.print(new String(serializedProducts));
+        System.out.print("\n\n");
+        System.out.print(Product.deserializeList(serializedProducts));
     }
 
 }

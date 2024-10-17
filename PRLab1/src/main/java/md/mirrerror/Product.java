@@ -2,6 +2,7 @@ package md.mirrerror;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,6 +104,26 @@ public class Product {
         CustomSerialization.serializeFields(this, serializedData, this.getClass());
         serializedData.append("|");
         return serializedData.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    public static byte[] serializeList(List<Product> products) {
+        StringBuilder serializedData = new StringBuilder();
+        for (Product product : products) {
+            serializedData.append(new String(product.serialize(), StandardCharsets.UTF_8));
+        }
+        return serializedData.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    public static List<Product> deserializeList(byte[] data) {
+        List<Product> productList = new ArrayList<>();
+        String[] productStrings = new String(data, StandardCharsets.UTF_8).split("\\|");
+
+        for (String productString : productStrings) {
+            if (!productString.isEmpty()) {
+                productList.add(Product.deserialize(productString.getBytes(StandardCharsets.UTF_8)));
+            }
+        }
+        return productList;
     }
 
     public static Product deserialize(byte[] data) {
