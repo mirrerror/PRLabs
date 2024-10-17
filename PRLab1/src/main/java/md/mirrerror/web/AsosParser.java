@@ -1,5 +1,6 @@
-package md.mirrerror;
+package md.mirrerror.web;
 
+import md.mirrerror.models.Product;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;

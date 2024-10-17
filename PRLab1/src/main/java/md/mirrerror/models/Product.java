@@ -1,26 +1,30 @@
-package md.mirrerror;
+package md.mirrerror.models;
 
-import java.nio.charset.StandardCharsets;
+import md.mirrerror.utils.CustomSerialization;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class Product {
+
+    private static final double GBP_TO_MDL_EXCHANGE_RATE = 22.96;
+
     private String name;
     private double priceInGbp;
     private double priceInMdl;
     private String url;
     private String productDetails;
 
+    public Product() {}
+
     public Product(String name, String url, String productDetails, double priceInGbp) {
         this.name = name;
         this.url = url;
         this.productDetails = productDetails;
-        this.priceInGbp = priceInGbp;
-        this.priceInMdl = priceInGbp * 22.96;
+        setPriceInGbp(priceInGbp);
     }
 
     public String getName() {
@@ -37,14 +41,11 @@ public class Product {
 
     public void setPriceInGbp(double priceInGbp) {
         this.priceInGbp = priceInGbp;
+        this.priceInMdl = priceInGbp * GBP_TO_MDL_EXCHANGE_RATE;
     }
 
     public double getPriceInMdl() {
         return priceInMdl;
-    }
-
-    public void setPriceInMdl(double priceInMdl) {
-        this.priceInMdl = priceInMdl;
     }
 
     public String getUrl() {
@@ -100,10 +101,7 @@ public class Product {
     }
 
     public byte[] serialize() {
-        StringBuilder serializedData = new StringBuilder();
-        CustomSerialization.serializeFields(this, serializedData, this.getClass());
-        serializedData.append("|");
-        return serializedData.toString().getBytes(StandardCharsets.UTF_8);
+        return CustomSerialization.serialize(this, this.getClass());
     }
 
     public static byte[] serializeList(List<Product> products) {
@@ -127,33 +125,20 @@ public class Product {
     }
 
     public static Product deserialize(byte[] data) {
-        Map<String, String> fieldValues = new HashMap<>();
-        String[] fields = new String(data, StandardCharsets.UTF_8).split(";");
+        return (Product) CustomSerialization.deserialize(new Product(), Product.class, data);
+    }
 
-        for (String field : fields) {
-            if (!field.equals("|") && field.contains("=")) {
-                String[] keyValue = field.split("=", 2);
-                if (keyValue.length == 2) {
-                    fieldValues.put(keyValue[0], keyValue[1]);
-                }
-            }
-        }
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        Product product = (Product) object;
+        return Double.compare(priceInGbp, product.priceInGbp) == 0 && Objects.equals(name, product.name) && Objects.equals(url, product.url);
+    }
 
-        try {
-            Product product = new Product(
-                    fieldValues.get("name"),
-                    fieldValues.get("url"),
-                    fieldValues.get("productDetails"),
-                    Double.parseDouble(fieldValues.get("priceInGbp"))
-            );
-
-            CustomSerialization.deserializeFields(product, fieldValues, product.getClass());
-
-            return product;
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error during deserialization: " + e.getMessage(), e);
-        }
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, priceInGbp, url);
     }
 
     @Override
@@ -166,4 +151,5 @@ public class Product {
                 ", productDetails='" + productDetails + '\'' +
                 '}';
     }
+
 }

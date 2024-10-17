@@ -1,15 +1,18 @@
-package md.mirrerror;
+package md.mirrerror.models;
 
-import java.nio.charset.StandardCharsets;
+import md.mirrerror.utils.CustomSerialization;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class FilteredProduct extends Product {
+
     private LocalDateTime createdAt;
+
+    public FilteredProduct() {}
 
     public FilteredProduct(String name, String url, String productDetails, double priceInGbp) {
         super(name, url, productDetails, priceInGbp);
@@ -58,42 +61,24 @@ public class FilteredProduct extends Product {
                 totalPriceInGbp, totalPriceInMdl, timestamp, productXmlList);
     }
 
-    @Override
-    public byte[] serialize() {
-        StringBuilder serializedData = new StringBuilder();
-        CustomSerialization.serializeFields(this, serializedData, this.getClass());
-        serializedData.append("|");
-        return serializedData.toString().getBytes(StandardCharsets.UTF_8);
+    public static FilteredProduct deserialize(byte[] data) {
+        return (FilteredProduct) CustomSerialization.deserialize(new FilteredProduct(), FilteredProduct.class, data);
     }
 
-    public static FilteredProduct deserialize(byte[] data) {
-        Map<String, String> fieldValues = new HashMap<>();
-        String[] fields = new String(data, StandardCharsets.UTF_8).split(";");
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        FilteredProduct product = (FilteredProduct) object;
+        return Double.compare(super.getPriceInGbp(), product.getPriceInGbp()) == 0
+                && Objects.equals(super.getName(), product.getName())
+                && Objects.equals(super.getUrl(), product.getUrl())
+                && Objects.equals(createdAt, product.getCreatedAt());
+    }
 
-        for (String field : fields) {
-            if (!field.equals("|") && field.contains("=")) {
-                String[] keyValue = field.split("=", 2);
-                if (keyValue.length == 2) {
-                    fieldValues.put(keyValue[0], keyValue[1]);
-                }
-            }
-        }
-
-        try {
-            FilteredProduct filteredProduct = new FilteredProduct(
-                    fieldValues.get("name"),
-                    fieldValues.get("url"),
-                    fieldValues.get("productDetails"),
-                    Double.parseDouble(fieldValues.get("priceInGbp"))
-            );
-
-            CustomSerialization.deserializeFields(filteredProduct, fieldValues, filteredProduct.getClass());
-
-            return filteredProduct;
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error during deserialization: " + e.getMessage(), e);
-        }
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.getName(), super.getPriceInGbp(), super.getUrl(), createdAt);
     }
 
     @Override
@@ -107,4 +92,5 @@ public class FilteredProduct extends Product {
                 ", createdAt=" + createdAt +
                 '}';
     }
+
 }
