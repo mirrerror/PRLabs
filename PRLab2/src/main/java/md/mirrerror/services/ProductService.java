@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import md.mirrerror.models.Product;
 import md.mirrerror.repositories.ProductRepository;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductService {
 
+    private final JdbcTemplate jdbcTemplate;
     private final ProductRepository productRepository;
 
     public List<Product> getAllProducts() {
@@ -25,8 +27,19 @@ public class ProductService {
     }
 
     @Transactional
-    public Product saveProduct(Product product) {
-        return productRepository.save(product);
+    public void saveProduct(Product product) {
+        productRepository.save(product);
+    }
+
+    @Transactional
+    public void saveProductList(List<Product> products) {
+        String sql = "INSERT INTO products (name, price_in_gbp, url, product_details) VALUES (?, ?, ?, ?)";
+        jdbcTemplate.batchUpdate(sql, products, products.size(), (ps, product) -> {
+            ps.setString(1, product.getName());
+            ps.setDouble(2, product.getPriceInGbp());
+            ps.setString(3, product.getUrl());
+            ps.setString(4, product.getProductDetails());
+        });
     }
 
     @Transactional

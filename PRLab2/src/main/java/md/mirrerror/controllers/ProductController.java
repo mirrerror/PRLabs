@@ -8,7 +8,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 
 @Controller
@@ -75,6 +79,39 @@ public class ProductController {
     @DeleteMapping("/{id}")
     public String delete(@PathVariable("id") int id) {
         productService.deleteProduct(id);
+        return "redirect:/products";
+    }
+
+    @GetMapping("/upload")
+    public String upload() {
+        return "products/upload";
+    }
+
+    @PostMapping("/upload")
+    public String uploadProducts(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return "redirect:/products/upload";
+        }
+
+        try {
+
+            String content = new String(file.getBytes(), StandardCharsets.UTF_8);
+            List<Product> products = Product.fromJsonArray(content);
+
+            if (products != null) {
+                productService.saveProductList(products);
+            } else {
+                Product product = Product.fromJson(content);
+                if (product != null) {
+                    productService.saveProduct(product);
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "redirect:/products/upload";
+        }
+
         return "redirect:/products";
     }
 
