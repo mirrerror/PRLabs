@@ -104,7 +104,7 @@ public class ProductController {
                 Product product = Product.fromJson(content);
                 if (product != null) {
                     productService.saveProduct(product);
-                }
+                } else return "redirect:/products/upload";
             }
 
         } catch (IOException e) {
