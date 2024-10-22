@@ -5,16 +5,17 @@
     <title>Show</title>
 </head>
 <body>
-<p th:text="${product.getName() + ', ' + product.getPriceInGbp()}">VALUE</p>
-<p th:text="${product.getProductId()}">VALUE</p>
+<p th:text="${product.getName()}">VALUE</p>
+<p th:text="${'Price: ' + product.getPriceInGbp() + ' GBP (~' + product.getPriceInMdl() + ' MDL)'}">VALUE</p>
+<p th:text="${'Product ID: ' + product.getProductId()}">VALUE</p>
 
 <br/>
 
-<p th:text="${product.getUrl()}">VALUE</p>
+<a th:href="${product.getUrl()}" th:text="${'Link to the product'}">VALUE</a>
 
 <br/>
 
-<p th:text="${product.getProductDetails()}">VALUE</p>
+<p th:text="${'Product details: ' + product.getProductDetails()}">VALUE</p>
 
 <a th:href="@{/products/{id}/edit(id=${product.getProductId()})}">Edit</a>
 
