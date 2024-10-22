@@ -8,7 +8,7 @@
 
 <div th:each="product : ${products}">
     <a th:href="@{/products/{id}(id=${product.getProductId()})}"
-       th:text="${product.getName() + ', ' + product.getPriceInGbp()}">product</a>
+       th:text="${product.getName() + ', ' + product.getPriceInGbp() + ' GBP (~' + product.getPriceInMdl() + ' MDL)'}">product</a>
 </div>
 
 <br/>

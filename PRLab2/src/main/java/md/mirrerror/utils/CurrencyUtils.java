@@ -8,11 +8,11 @@ public class CurrencyUtils {
     private static final double GBP_TO_MDL_EXCHANGE_RATE = 22.96;
 
     public static double convertGbpToMdl(double priceInGbp) {
-        return priceInGbp * GBP_TO_MDL_EXCHANGE_RATE;
+        return Double.parseDouble(String.format("%.2f", priceInGbp * GBP_TO_MDL_EXCHANGE_RATE));
     }
 
     public static double convertMdlToGbp(double priceInMdl) {
-        return priceInMdl / GBP_TO_MDL_EXCHANGE_RATE;
+        return Double.parseDouble(String.format("%.2f", priceInMdl / GBP_TO_MDL_EXCHANGE_RATE));
     }
 
 }
