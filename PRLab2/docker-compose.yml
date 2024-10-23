@@ -5,12 +5,34 @@ services:
     image: mysql:8.0
     container_name: my_database
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-      MYSQL_DATABASE: prlab2
+      - MYSQL_ROOT_PASSWORD=
+      - MYSQL_DATABASE=prlab2
+      - MYSQL_CHARSET=utf8mb4
+      - MYSQL_COLLATION=utf8mb4_unicode_ci
     ports:
       - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
+    networks:
+      - app-network
+  app:
+    image: prlab2
+    container_name: spring_app
+    depends_on:
+      - db
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/prlab2
+      SPRING_DATASOURCE_PASSWORD: ''
+      SPRING_DATASOURCE_USERNAME: root
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
 
 volumes:
   db_data:
+
+networks:
+  app-network:
+    driver: bridge
