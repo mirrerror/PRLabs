@@ -34,7 +34,7 @@ public class Product {
     @Column(name = "name")
     private String name;
 
-    @Min(value = 0, message = "Price must be greater than 0")
+    @Min(value = 0, message = "Price mustn't be less than 0")
     @Column(name = "price_in_gbp")
     private double priceInGbp;
 
