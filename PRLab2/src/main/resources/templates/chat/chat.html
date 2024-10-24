@@ -16,45 +16,34 @@
             background-color: #1d1b31;
             color: #e0e0e0;
         }
-        #nameInputSection, #messageInputSection {
-            display: none;
-            padding: 10px;
-            background-color: #2a2840;
-            border-top: 1px solid #3e3b5c;
-        }
-        #nameInputSection {
-            flex-grow: 1;
-            justify-content: center;
-            align-items: center;
-            display: flex;
-        }
         #messageInputSection {
             display: flex;
+            justify-content: center;
             padding: 15px;
             background-color: #2a2840;
             border-top: 1px solid #3e3b5c;
         }
-        #messageInputSection input[type="text"], #nameInputSection input[type="text"] {
-            flex-grow: 1;
-            padding: 15px;
-            font-size: 18px;
+        #messageInputSection input[type="text"] {
+            width: 50%;
+            padding: 10px;
+            font-size: 16px;
             background-color: #3e3b5c;
             color: #fff;
             border: none;
             border-radius: 8px;
             outline: none;
         }
-        #messageInputSection button, #nameInputSection button {
-            padding: 15px 20px;
+        #messageInputSection button {
+            padding: 10px 15px;
             margin-left: 10px;
             border: none;
             background-color: #8a3ab9;
             color: white;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             border-radius: 8px;
         }
-        #messageInputSection button:hover, #nameInputSection button:hover {
+        #messageInputSection button:hover {
             background-color: #732fa1;
         }
         #messageArea {
@@ -98,61 +87,19 @@
         .ellipse {
             border-radius: 12px;
         }
-        .blurred {
-            filter: blur(8px);
-            pointer-events: none;
-        }
-        #nameInputOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        #nameInputOverlay input {
-            font-size: 20px;
-            padding: 15px;
-            background-color: #3e3b5c;
-            color: white;
-            border-radius: 8px;
-            border: none;
-            outline: none;
-        }
-        #nameInputOverlay button {
-            padding: 15px 20px;
-            margin-left: 15px;
-            border: none;
-            background-color: #8a3ab9;
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
-            border-radius: 8px;
-        }
-        #nameInputOverlay button:hover {
-            background-color: #732fa1;
-        }
     </style>
 </head>
 <body>
-<div id="messageArea" class="blurred">
+<div id="messageArea">
     <ul id="messages"></ul>
 </div>
-<div id="messageInputSection" class="blurred">
-    <input type="text" id="message" placeholder="Type a message...">
+<div id="messageInputSection">
+    <input type="text" id="message" placeholder="Type your nickname...">
     <button onclick="sendMessage()">Send</button>
-</div>
-<div id="nameInputOverlay">
-    <input type="text" id="nameInput" placeholder="Enter your name...">
-    <button onclick="enterChat()">Enter Chat</button>
 </div>
 <script type="text/javascript">
     var stompClient = null;
-    var userName = '';
+    var userName = null;
 
     function connect() {
         var socket = new SockJS('/chat');
@@ -172,21 +119,17 @@
         });
     }
 
-    function enterChat() {
-        var nameInput = document.getElementById("nameInput");
-        userName = nameInput.value.trim();
-        if (userName) {
-            document.getElementById("nameInputOverlay").style.display = "none";
-            document.getElementById("messageArea").classList.remove("blurred");
-            document.getElementById("messageInputSection").classList.remove("blurred");
-            connect();
-        }
-    }
-
     function sendMessage() {
         var messageInput = document.getElementById("message");
         var messageContent = messageInput.value.trim();
+
         if (messageContent) {
+            if (!userName) {
+                userName = messageContent;
+                messageInput.placeholder = "Type a message...";
+                messageContent = userName + " has joined the chat.";
+            }
+
             stompClient.send("/app/send-message", {}, JSON.stringify({
                 'message': messageContent,
                 'sender': userName
@@ -217,16 +160,14 @@
     }
 
     document.getElementById("message").addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
+        if (userName && e.key === "Enter") {
+            sendMessage();
+        } else if (!userName && e.key === "Enter") {
             sendMessage();
         }
     });
 
-    document.getElementById("nameInput").addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-            enterChat();
-        }
-    });
+    connect();
 </script>
 </body>
 </html>
