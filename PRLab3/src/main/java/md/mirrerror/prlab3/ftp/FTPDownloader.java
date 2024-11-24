@@ -1,4 +1,4 @@
-package md.mirrerror.prlab3;
+package md.mirrerror.prlab3.ftp;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -32,6 +32,7 @@ public class FTPDownloader {
 
                 if (success) {
                     System.out.println("File downloaded successfully: " + localFilePath);
+                    System.out.println("File has been saved to: " + localFile.getAbsolutePath());
                 } else {
                     System.out.println("Failed to download file: " + localFilePath);
                 }

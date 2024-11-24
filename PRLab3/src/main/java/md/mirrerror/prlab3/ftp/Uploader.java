@@ -1,4 +1,4 @@
-package md.mirrerror.prlab3;
+package md.mirrerror.prlab3.ftp;
 
 import lombok.RequiredArgsConstructor;
 import md.mirrerror.prlab3.utils.FileUtils;
@@ -21,7 +21,7 @@ public class Uploader {
     public void fetchAndSendFile() throws IOException {
         System.out.println("Fetching file from FTP server...");
 
-        File downloadedFile = ftpDownloader.downloadFileFromFTP("/remote/path/to/file.txt", "local/path/to/file.txt");
+        File downloadedFile = ftpDownloader.downloadFileFromFTP("/products.json", "downloaded_products.json");
 
         if (downloadedFile.exists()) {
             FileUtils.uploadFileToServer(downloadedFile);

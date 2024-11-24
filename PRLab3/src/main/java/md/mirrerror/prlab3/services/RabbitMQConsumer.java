@@ -3,15 +3,9 @@ package md.mirrerror.prlab3.services;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import md.mirrerror.prlab3.utils.FileUtils;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,29 +31,13 @@ public class RabbitMQConsumer {
     }
 
     private void uploadFileToServer() {
-        try {
-            File file = new File("received_message.json");
-            if (!file.exists()) {
-                System.err.println("File does not exist: " + file.getAbsolutePath());
-                return;
-            }
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", new FileSystemResource(file));
-
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-            String uploadUrl = "http://localhost:8080/products/upload";
-
-            RestTemplate restTemplate = new RestTemplate();
-            restTemplate.postForEntity(uploadUrl, requestEntity, String.class);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Failed to upload the file.");
+        File file = new File("received_message.json");
+        if (!file.exists()) {
+            System.err.println("File does not exist: " + file.getAbsolutePath());
+            return;
         }
+
+        FileUtils.uploadFileToServer(file);
     }
 
 }
