@@ -82,8 +82,8 @@ public class AsosParser {
             Product product = new Product(productName, productUrl, productDetails, Double.parseDouble(productPrice));
             products.add(product);
 
-//            if (rabbitMQPublisher != null)
-//                rabbitMQPublisher.publishMessage(product.toJson());
+            if (rabbitMQPublisher != null)
+                rabbitMQPublisher.publishMessage(product.toJson());
         }
 
         if (rabbitMQPublisher != null)
