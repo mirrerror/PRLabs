@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -39,9 +40,9 @@ public class Node {
         }
 
         this.id = Integer.parseInt(nodeId);
-        this.peers = Stream.of(nodePeers.split(","))
+        this.peers = !nodePeers.isBlank() ? Stream.of(nodePeers.split(","))
                 .map(Integer::parseInt)
-                .toList();
+                .toList() : new ArrayList<>();
         this.state = NodeState.FOLLOWER;
         this.currentTerm = 0;
         this.votedFor = -1;
