@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room</title>
+    <script src="https://cdn.jsdelivr.net/sockjs/1.1.1/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Helvetica Neue', sans-serif;
+            background-color: #1d1b31;
+            color: #e0e0e0;
+        }
+        #messageInputSection {
+            display: flex;
+            justify-content: center;
+            padding: 15px;
+            background-color: #2a2840;
+            border-top: 1px solid #3e3b5c;
+        }
+        #messageInputSection input[type="text"] {
+            width: 50%;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #3e3b5c;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+        }
+        #messageInputSection button {
+            padding: 10px 15px;
+            margin-left: 10px;
+            border: none;
+            background-color: #8a3ab9;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        #messageInputSection button:hover {
+            background-color: #732fa1;
+        }
+        #messageArea {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #1d1b31;
+            border-bottom: 1px solid #3e3b5c;
+        }
+        #messageArea ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #messageArea li {
+            padding: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .message-bubble {
+            max-width: 70%;
+            padding: 15px;
+            border-radius: 12px;
+            background-color: #4e457d;
+            color: #e0e0e0;
+            word-wrap: break-word;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            font-size: 16px;
+        }
+        .message-sender {
+            font-weight: bold;
+            color: #bb86fc;
+        }
+        .timestamp {
+            font-size: 12px;
+            color: #888;
+            margin-left: 15px;
+            white-space: nowrap;
+            align-self: flex-end;
+        }
+        .ellipse {
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+<div id="messageArea">
+    <ul id="messages"></ul>
+</div>
+<div id="messageInputSection">
+    <input type="text" id="message" placeholder="Type your nickname...">
+    <button onclick="sendMessage()">Send</button>
+</div>
+<script type="text/javascript">
+    var stompClient = null;
+    var userName = null;
+
+    function connect() {
+        var socket = new SockJS('/chat');
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+            stompClient.subscribe('/topic/all', function (messageOutput) {
+                showMessage(JSON.parse(messageOutput.body));
+            });
+            fetch('/chat/messages')
+                .then(response => response.json())
+                .then(messages => {
+                    messages.forEach(message => {
+                        showMessage(message);
+                    });
+                });
+        });
+    }
+
+    function sendMessage() {
+        var messageInput = document.getElementById("message");
+        var messageContent = messageInput.value.trim();
+
+        if (messageContent) {
+            if (!userName) {
+                userName = messageContent;
+                messageInput.placeholder = "Type a message...";
+                messageContent = userName + " has joined the chat.";
+            }
+
+            stompClient.send("/app/send-message", {}, JSON.stringify({
+                'message': messageContent,
+                'sender': userName
+            }));
+            messageInput.value = "";
+        }
+    }
+
+    function showMessage(message) {
+        var messageArea = document.getElementById("messages");
+        var messageElement = document.createElement('li');
+        var messageBubble = document.createElement('div');
+        messageBubble.className = 'message-bubble ellipse';
+        var sender = document.createElement('div');
+        sender.className = 'message-sender';
+        sender.textContent = message.sender;
+        var content = document.createElement('div');
+        content.textContent = message.message;
+        messageBubble.appendChild(sender);
+        messageBubble.appendChild(content);
+        var timestamp = document.createElement('div');
+        timestamp.className = 'timestamp';
+        timestamp.textContent = message.timestamp;
+        messageElement.appendChild(messageBubble);
+        messageElement.appendChild(timestamp);
+        messageArea.appendChild(messageElement);
+        messageArea.scrollTop = messageArea.scrollHeight;
+    }
+
+    document.getElementById("message").addEventListener("keydown", function (e) {
+        if (userName && e.key === "Enter") {
+            sendMessage();
+        } else if (!userName && e.key === "Enter") {
+            sendMessage();
+        }
+    });
+
+    connect();
+</script>
+</body>
+</html>

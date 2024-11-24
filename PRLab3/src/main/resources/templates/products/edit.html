@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Update product</title>
+</head>
+<body>
+
+<form th:method="PATCH" th:action="@{/products/{id}(id=${product.getProductId()})}" th:object="${product}">
+    <label for="name">Enter name: </label>
+    <input type="text" th:field="*{name}" id="name"/>
+    <div style="color:red" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Name Error</div>
+    <br/>
+    <label for="priceInGbp">Enter price in GBP: </label>
+    <input type="text" th:field="*{priceInGbp}" id="priceInGbp"/>
+    <div style="color:red" th:if="${#fields.hasErrors('priceInGbp')}" th:errors="*{priceInGbp}">Price in GPB Error</div>
+    <br/>
+    <label for="url">Enter URL: </label>
+    <input type="text" th:field="*{url}" id="url"/>
+    <div style="color:red" th:if="${#fields.hasErrors('url')}" th:errors="*{url}">URL Error</div>
+    <br/>
+    <label for="productDetails">Enter product details: </label>
+    <input type="text" th:field="*{productDetails}" id="productDetails"/>
+    <div style="color:red" th:if="${#fields.hasErrors('productDetails')}" th:errors="*{productDetails}">Product Details Error</div>
+    <br/>
+    <input type="submit" value="Update"/>
+</form>
+
+</body>
+</html>
