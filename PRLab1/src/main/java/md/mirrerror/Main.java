@@ -18,6 +18,11 @@ public class Main {
     private static final String RABBITMQ_USERNAME = "guest";
     private static final String RABBITMQ_PASSWORD = "guest";
 
+    private static final String FTP_HOST = "localhost";
+    private static final String FTP_USERNAME = "testuser";
+    private static final String FTP_PASSWORD = "testpass";
+    private static final int FTP_PORT = 21;
+
     public static void main(String[] args) throws Exception {
 //        System.out.println("GET request to asos.com:\n");
 //        System.out.println(RequestUtils.doGetRequest(FULL_URL));
@@ -29,7 +34,19 @@ public class Main {
 //
 //        System.out.print("\n\n\n");
 
-        AsosParser asosParser = new AsosParser(PROTOCOL, HOSTNAME, URL_PATH, RABBITMQ_HOST, RABBITMQ_USERNAME, RABBITMQ_PASSWORD);
+        AsosParser asosParser = new AsosParser.Builder()
+                .setProtocol(PROTOCOL)
+                .setHostname(HOSTNAME)
+                .setUrlPath(URL_PATH)
+                .setRabbitMQHost(RABBITMQ_HOST)
+                .setRabbitMQUsername(RABBITMQ_USERNAME)
+                .setRabbitMQPassword(RABBITMQ_PASSWORD)
+                .setFtpHost(FTP_HOST)
+                .setFtpUsername(FTP_USERNAME)
+                .setFtpPassword(FTP_PASSWORD)
+                .setFtpPort(FTP_PORT)
+                .build();
+
         ProductFilter productFilter = new ProductFilter();
 
         List<Product> products = asosParser.parse();

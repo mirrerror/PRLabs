@@ -9,24 +9,24 @@ import java.io.IOException;
 
 public class FTPUploader {
 
-    private final String server;
+    private final String host;
     private final int port;
-    private final String user;
-    private final String pass;
+    private final String username;
+    private final String password;
 
-    public FTPUploader(String server, int port, String user, String pass) {
-        this.server = server;
+    public FTPUploader(String host, int port, String username, String password) {
+        this.host = host;
         this.port = port;
-        this.user = user;
-        this.pass = pass;
+        this.username = username;
+        this.password = password;
     }
 
     public void uploadFileToFTP(File file) throws IOException {
         FTPClient ftpClient = new FTPClient();
 
         try {
-            ftpClient.connect(server, port);
-            ftpClient.login(user, pass);
+            ftpClient.connect(host, port);
+            ftpClient.login(username, password);
             ftpClient.enterLocalPassiveMode();
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 
