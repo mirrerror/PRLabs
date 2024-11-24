@@ -1,5 +1,6 @@
 package md.mirrerror.web;
 
+import md.mirrerror.FTPUploader;
 import md.mirrerror.RabbitMQPublisher;
 import md.mirrerror.models.Product;
 import org.jsoup.Jsoup;
@@ -7,6 +8,10 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -77,19 +82,41 @@ public class AsosParser {
             Product product = new Product(productName, productUrl, productDetails, Double.parseDouble(productPrice));
             products.add(product);
 
-            if (rabbitMQPublisher != null)
-                rabbitMQPublisher.publishMessage(product.toJson());
-        }
-
-        if (rabbitMQHost == null || rabbitMQHost.isEmpty() || rabbitMQUsername == null || rabbitMQUsername.isEmpty() || rabbitMQPassword == null) {
-            return products;
+//            if (rabbitMQPublisher != null)
+//                rabbitMQPublisher.publishMessage(product.toJson());
         }
 
         if (rabbitMQPublisher != null)
             rabbitMQPublisher.close();
 
+        File createdFile = createProductsJsonFile(products);
+        if (createdFile != null) {
+            FTPUploader ftpUploader = new FTPUploader("localhost", 21, "testuser", "testpass");
+            ftpUploader.uploadFileToFTP(createdFile);
+        }
+
         return products;
     }
+
+    public File createProductsJsonFile(List<Product> products) {
+        File jsonFile = null;
+        try {
+            String jsonContent = Product.listToJson(products);
+
+            jsonFile = new File("products.json");
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(jsonFile))) {
+                writer.write(jsonContent);
+            }
+
+            System.out.println("Products JSON file created successfully.");
+        } catch (IOException e) {
+            System.err.println("Error while creating JSON file: " + e.getMessage());
+        }
+
+        return jsonFile;
+    }
+
 
     public String getHostname() {
         return hostname;
