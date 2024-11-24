@@ -56,7 +56,7 @@ public class Product {
         ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         try {
             return objectMapper.readValue(json, Product.class);
-        } catch (JsonProcessingException ignored) {
+        } catch (JsonProcessingException | NullPointerException ignored) {
             return null;
         }
     }
@@ -68,7 +68,7 @@ public class Product {
             JsonNode rootNode = objectMapper.readTree(jsonArray);
             JsonNode productsNode = rootNode.get("products");
             return objectMapper.readValue(productsNode.toString(), objectMapper.getTypeFactory().constructCollectionType(List.class, Product.class));
-        } catch (JsonProcessingException ignored) {
+        } catch (JsonProcessingException | NullPointerException ignored) {
             return null;
         }
     }
