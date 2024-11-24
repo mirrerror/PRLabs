@@ -1,6 +1,7 @@
 package md.mirrerror.prlab3;
 
 import lombok.RequiredArgsConstructor;
+import md.mirrerror.prlab3.utils.EmailManager;
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.springframework.boot.SpringApplication;
@@ -19,6 +20,9 @@ public class PrLab3Application {
     private final DataSourceProperties dataSourceProperties;
 
     public static void main(String[] args) {
+        EmailManager emailManager = new EmailManager();
+        emailManager.sendEmail();
+
         SpringApplication.run(PrLab3Application.class, args);
     }
 

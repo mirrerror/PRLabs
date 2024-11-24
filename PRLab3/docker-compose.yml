@@ -53,6 +53,7 @@ services:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_USERNAME: guest
       RABBITMQ_PASSWORD: guest
+      MAILERSEND_API_KEY: 'PASTE THE TOKEN HERE'
       NODE_ID: 0
       NODE_PEERS: ''
     ports:
