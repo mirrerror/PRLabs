@@ -14,7 +14,11 @@ public class Main {
     private static final String URL_PATH = "/men/sale/cat/?cid=8409&ctaref=hp|mw|promo|banner|1|edit|saleupto70offmss";
 //    private static final String FULL_URL = PROTOCOL + HOSTNAME + URL_PATH;
 
-    public static void main(String[] args) {
+    private static final String RABBITMQ_HOST = "localhost";
+    private static final String RABBITMQ_USERNAME = "guest";
+    private static final String RABBITMQ_PASSWORD = "guest";
+
+    public static void main(String[] args) throws Exception {
 //        System.out.println("GET request to asos.com:\n");
 //        System.out.println(RequestUtils.doGetRequest(FULL_URL));
 //
@@ -25,7 +29,7 @@ public class Main {
 //
 //        System.out.print("\n\n\n");
 
-        AsosParser asosParser = new AsosParser(PROTOCOL, HOSTNAME, URL_PATH);
+        AsosParser asosParser = new AsosParser(PROTOCOL, HOSTNAME, URL_PATH, RABBITMQ_HOST, RABBITMQ_USERNAME, RABBITMQ_PASSWORD);
         ProductFilter productFilter = new ProductFilter();
 
         List<Product> products = asosParser.parse();

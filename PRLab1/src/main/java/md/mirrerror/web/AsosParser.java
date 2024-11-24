@@ -1,5 +1,6 @@
 package md.mirrerror.web;
 
+import md.mirrerror.RabbitMQPublisher;
 import md.mirrerror.models.Product;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -15,13 +16,20 @@ public class AsosParser {
     private String hostname;
     private String urlPath;
 
-    public AsosParser(String protocol, String hostname, String urlPath) {
+    private String rabbitMQHost;
+    private String rabbitMQUsername;
+    private String rabbitMQPassword;
+
+    public AsosParser(String protocol, String hostname, String urlPath, String rabbitMQHost, String rabbitMQUsername, String rabbitMQPassword) {
         this.protocol = protocol;
         this.hostname = hostname;
         this.urlPath = urlPath;
+        this.rabbitMQHost = rabbitMQHost;
+        this.rabbitMQUsername = rabbitMQUsername;
+        this.rabbitMQPassword = rabbitMQPassword;
     }
 
-    public List<Product> parse() {
+    public List<Product> parse() throws Exception {
         List<Product> products = new ArrayList<>();
 
         String html = RequestUtils.doGetRequestUsingSocket(hostname, urlPath);
@@ -29,8 +37,16 @@ public class AsosParser {
 
         Elements articles = document.select("article.productTile_U0clN");
 
+        RabbitMQPublisher rabbitMQPublisher = null;
+
+        if (!(rabbitMQHost == null || rabbitMQHost.isEmpty() || rabbitMQUsername == null || rabbitMQUsername.isEmpty() || rabbitMQPassword == null))
+            rabbitMQPublisher = new RabbitMQPublisher(rabbitMQHost, rabbitMQUsername, rabbitMQPassword);
+
         for (Element article : articles) {
             Element linkElement = article.selectFirst(".productLink_KM4PI");
+
+            if (linkElement == null) continue;
+
             String productUrl = linkElement.attr("href");
 
             String productName = article.select("p.productDescription_sryaw").text();
@@ -60,7 +76,17 @@ public class AsosParser {
 //            System.out.println("product price: " + productPrice);
             Product product = new Product(productName, productUrl, productDetails, Double.parseDouble(productPrice));
             products.add(product);
+
+            if (rabbitMQPublisher != null)
+                rabbitMQPublisher.publishMessage(product.toJson());
         }
+
+        if (rabbitMQHost == null || rabbitMQHost.isEmpty() || rabbitMQUsername == null || rabbitMQUsername.isEmpty() || rabbitMQPassword == null) {
+            return products;
+        }
+
+        if (rabbitMQPublisher != null)
+            rabbitMQPublisher.close();
 
         return products;
     }
@@ -89,4 +115,27 @@ public class AsosParser {
         this.protocol = protocol;
     }
 
+    public String getRabbitMQHost() {
+        return rabbitMQHost;
+    }
+
+    public void setRabbitMQHost(String rabbitMQHost) {
+        this.rabbitMQHost = rabbitMQHost;
+    }
+
+    public String getRabbitMQUsername() {
+        return rabbitMQUsername;
+    }
+
+    public void setRabbitMQUsername(String rabbitMQUsername) {
+        this.rabbitMQUsername = rabbitMQUsername;
+    }
+
+    public String getRabbitMQPassword() {
+        return rabbitMQPassword;
+    }
+
+    public void setRabbitMQPassword(String rabbitMQPassword) {
+        this.rabbitMQPassword = rabbitMQPassword;
+    }
 }
