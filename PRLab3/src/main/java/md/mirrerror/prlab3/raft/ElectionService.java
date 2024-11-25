@@ -9,32 +9,38 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Service
 public class ElectionService {
 
+    private static final Logger LOGGER = Logger.getLogger(ElectionService.class.getName());
+    private static final int MANAGER_SERVER_PORT = 8999;
+
     private final Node node;
-    private int votesReceived;
+    private final AtomicInteger votesReceived = new AtomicInteger(0);
 
     @Autowired
     public ElectionService(Node node) {
         this.node = node;
-        this.votesReceived = 0;
     }
 
     @Scheduled(fixedRate = 100)
     public void checkElectionTimeout() {
-        if (node.getState() == NodeState.FOLLOWER &&
-                (Instant.now().toEpochMilli() - node.getLastHeartbeat()) > node.getElectionTimeout()) {
+        long timeSinceLastHeartbeat = Instant.now().toEpochMilli() - node.getLastHeartbeat();
+        if (node.getState() == NodeState.FOLLOWER && timeSinceLastHeartbeat > node.getElectionTimeout()) {
             startElection();
         }
     }
 
-    public void startElection() {
+    public synchronized void startElection() {
         node.setState(NodeState.CANDIDATE);
         node.incrementTerm();
         node.setLastHeartbeat(Instant.now().toEpochMilli());
-        votesReceived = 1; // Vote for itself
+        votesReceived.set(1); // Vote for itself
+        LOGGER.log(Level.INFO, "Node {0} started an election for term {1}", new Object[]{node.getId(), node.getCurrentTerm()});
         requestVotes();
     }
 
@@ -47,21 +53,22 @@ public class ElectionService {
     private void sendVoteRequest(int peerId) {
         String message = "RequestVote:" + node.getCurrentTerm() + ":" + node.getId();
         CommunicationService.sendMessage(message, peerId);
+        LOGGER.log(Level.INFO, "Vote request sent to peer {0}", peerId);
     }
 
-    public void receiveVoteResponse(boolean voteGranted) {
+    public synchronized void receiveVoteResponse(boolean voteGranted) {
         if (node.getState() == NodeState.CANDIDATE && voteGranted) {
-            votesReceived++;
-            if (votesReceived > node.getPeers().size() / 2) {
+            int totalVotes = votesReceived.incrementAndGet();
+            if (totalVotes > node.getPeers().size() / 2) {
                 becomeLeader();
             }
         }
     }
 
-    private void becomeLeader() {
+    private synchronized void becomeLeader() {
         node.setState(NodeState.LEADER);
         notifyManagerServer();
-        System.out.println("Node " + node.getId() + " became the leader!");
+        LOGGER.log(Level.INFO, "Node {0} became the leader for term {1}", new Object[]{node.getId(), node.getCurrentTerm()});
     }
 
     private void notifyManagerServer() {
@@ -69,11 +76,11 @@ public class ElectionService {
         try (DatagramSocket socket = new DatagramSocket()) {
             byte[] buffer = message.getBytes();
             InetAddress address = InetAddress.getByName("localhost");
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 8999);
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, MANAGER_SERVER_PORT);
             socket.send(packet);
+            LOGGER.log(Level.INFO, "Leader notification sent to manager server.");
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Failed to notify manager server.", e);
         }
-        System.out.println("Notified the manager server about the leader.");
     }
 }
