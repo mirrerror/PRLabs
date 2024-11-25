@@ -34,7 +34,7 @@ services:
       RABBITMQ_USERNAME: guest
       RABBITMQ_PASSWORD: guest
     ports:
-      - "8080:8080"
+      - "8079:8080"
     networks:
       - app-network
 

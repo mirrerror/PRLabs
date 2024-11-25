@@ -1,6 +1,7 @@
-package md.mirrerror.prlab3intermediateserver;
+package md.mirrerror.prlab3intermediateserver.ftp;
 
 import lombok.RequiredArgsConstructor;
+import md.mirrerror.prlab3intermediateserver.FileManager;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -14,16 +15,17 @@ import java.util.concurrent.TimeUnit;
 public class Uploader {
 
     private final FTPDownloader ftpDownloader;
+    private final FileManager fileManager;
 
     @Async
     @Scheduled(fixedRate = 30, timeUnit = TimeUnit.SECONDS)
     public void fetchAndSendFile() throws IOException {
         System.out.println("Fetching file from FTP server...");
 
-        File downloadedFile = ftpDownloader.downloadFileFromFTP("/remote/path/to/file.txt", "local/path/to/file.txt");
+        File downloadedFile = ftpDownloader.downloadFileFromFTP("/products.json", "downloaded_products.json");
 
         if (downloadedFile.exists()) {
-            FileUtils.uploadFileToServer(downloadedFile);
+            fileManager.uploadFileToServer(downloadedFile);
         }
     }
 

@@ -3,7 +3,8 @@ package md.mirrerror.prlab3intermediateserver.services;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import md.mirrerror.prlab3intermediateserver.FileUtils;
+import lombok.RequiredArgsConstructor;
+import md.mirrerror.prlab3intermediateserver.FileManager;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
@@ -11,8 +12,10 @@ import java.io.File;
 import java.io.IOException;
 
 @Service
+@RequiredArgsConstructor
 public class RabbitMQConsumer {
 
+    private final FileManager fileManager;
     private final ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @RabbitListener(queues = "app_queue")
@@ -32,13 +35,12 @@ public class RabbitMQConsumer {
 
     private void uploadFileToServer() {
         File file = new File("received_message.json");
-
         if (!file.exists()) {
             System.err.println("File does not exist: " + file.getAbsolutePath());
             return;
         }
 
-        FileUtils.uploadFileToServer(file);
+        fileManager.uploadFileToServer(file);
     }
 
 }

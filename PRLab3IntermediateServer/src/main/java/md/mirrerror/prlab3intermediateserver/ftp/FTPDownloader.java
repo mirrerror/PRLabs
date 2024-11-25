@@ -1,4 +1,4 @@
-package md.mirrerror.prlab3.ftp;
+package md.mirrerror.prlab3intermediateserver.ftp;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -12,18 +12,18 @@ import java.io.OutputStream;
 @Component
 public class FTPDownloader {
 
-    private final String server = "ftp_server";
+    private final String hostname = "ftp_server";
     private final int port = 21;
-    private final String user = "testuser";
-    private final String pass = "testpass";
+    private final String username = "testuser";
+    private final String password = "testpass";
 
     public File downloadFileFromFTP(String remoteFilePath, String localFilePath) throws IOException {
         FTPClient ftpClient = new FTPClient();
         File localFile = new File(localFilePath);
 
         try {
-            ftpClient.connect(server, port);
-            ftpClient.login(user, pass);
+            ftpClient.connect(hostname, port);
+            ftpClient.login(username, password);
             ftpClient.enterLocalPassiveMode();
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 
