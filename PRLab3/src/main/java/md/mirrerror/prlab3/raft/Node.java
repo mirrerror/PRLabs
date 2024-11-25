@@ -19,8 +19,10 @@ public class Node {
     @Setter
     private NodeState state;
 
+    @Setter
     private int currentTerm;
 
+    @Setter
     private int votedFor;
 
     private int electionTimeout;
@@ -57,6 +59,4 @@ public class Node {
     public void setRandomElectionTimeout() {
         this.electionTimeout = new Random().nextInt(500) + 1500; // 1500ms to 2000ms
     }
-
 }
-

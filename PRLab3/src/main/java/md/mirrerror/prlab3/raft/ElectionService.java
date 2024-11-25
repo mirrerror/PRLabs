@@ -3,6 +3,7 @@ package md.mirrerror.prlab3.raft;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 
@@ -10,12 +11,13 @@ import java.time.Instant;
 public class ElectionService {
 
     private final Node node;
-
+    private final RestTemplate restTemplate;
     private int votesReceived;
 
     @Autowired
     public ElectionService(Node node) {
         this.node = node;
+        this.restTemplate = new RestTemplate();
         this.votesReceived = 0;
     }
 
@@ -57,7 +59,14 @@ public class ElectionService {
 
     private void becomeLeader() {
         node.setState(NodeState.LEADER);
+        notifyManagerServer();
         System.out.println("Node " + node.getId() + " became the leader!");
     }
-}
 
+    private void notifyManagerServer() {
+        String managerUrl = "http://localhost:8080/raft/leader";
+        String leaderInfo = "Leader:" + node.getId();
+        String response = restTemplate.postForObject(managerUrl, leaderInfo, String.class);
+        System.out.println("Notified the manager server about the leader. Manager server response: " + response);
+    }
+}

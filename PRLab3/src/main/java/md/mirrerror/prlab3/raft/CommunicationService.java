@@ -5,19 +5,19 @@ import java.net.*;
 
 public class CommunicationService {
 
-    public static void sendMessage(String message, int peerPort) {
+    public static void sendMessage(String message, int peerId) {
         try (DatagramSocket socket = new DatagramSocket()) {
             byte[] buffer = message.getBytes();
             InetAddress address = InetAddress.getByName("localhost");
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, peerPort);
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 9000 + peerId);
             socket.send(packet);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public static String receiveMessage(int port) {
-        try (DatagramSocket socket = new DatagramSocket(port)) {
+    public static String receiveMessage(int peerId) {
+        try (DatagramSocket socket = new DatagramSocket(9000 + peerId)) {
             byte[] buffer = new byte[1024];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
             socket.receive(packet);
