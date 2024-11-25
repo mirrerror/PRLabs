@@ -1,6 +1,7 @@
 package md.mirrerror.prlab3;
 
 import lombok.RequiredArgsConstructor;
+import md.mirrerror.prlab3.raft.Node;
 import md.mirrerror.prlab3.utils.EmailManager;
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
@@ -16,6 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class PrLab3Application {
 
     private final DataSourceProperties dataSourceProperties;
+    private final Node node;
 
     public static void main(String[] args) {
         EmailManager emailManager = new EmailManager();
