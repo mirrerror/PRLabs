@@ -59,4 +59,12 @@ public class Node {
     public void setRandomElectionTimeout() {
         this.electionTimeout = new Random().nextInt(500) + 1500; // 1500ms to 2000ms
     }
+
+    public int getPort() {
+        return 8080 + id - 1;
+    }
+
+    public int getUdpPort() {
+        return 9000 + id;
+    }
 }

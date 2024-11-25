@@ -3,21 +3,22 @@ package md.mirrerror.prlab3.raft;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.time.Instant;
 
 @Service
 public class ElectionService {
 
     private final Node node;
-    private final RestTemplate restTemplate;
     private int votesReceived;
 
     @Autowired
     public ElectionService(Node node) {
         this.node = node;
-        this.restTemplate = new RestTemplate();
         this.votesReceived = 0;
     }
 
@@ -64,9 +65,15 @@ public class ElectionService {
     }
 
     private void notifyManagerServer() {
-        String managerUrl = "http://localhost:8080/raft/leader";
-        String leaderInfo = "Leader:" + node.getId();
-        String response = restTemplate.postForObject(managerUrl, leaderInfo, String.class);
-        System.out.println("Notified the manager server about the leader. Manager server response: " + response);
+        String message = "Leader:" + node.getPort();
+        try (DatagramSocket socket = new DatagramSocket()) {
+            byte[] buffer = message.getBytes();
+            InetAddress address = InetAddress.getByName("localhost");
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 8999);
+            socket.send(packet);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Notified the manager server about the leader.");
     }
 }

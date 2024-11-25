@@ -21,8 +21,8 @@ public class UDPHandler implements Runnable {
     public void run() {
         DatagramSocket socket = null;
         try {
-            socket = new DatagramSocket(9000 + node.getId());
-            System.out.println("Started UDP listening on port " + (9000 + node.getId()));
+            socket = new DatagramSocket(node.getUdpPort());
+            System.out.println("Started UDP listening on port " + node.getUdpPort());
             byte[] buffer = new byte[1024];
             while (true) {
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
