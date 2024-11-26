@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 @Getter
 @Component
@@ -31,6 +30,7 @@ public class Node {
     private final String nodeAddress;
     private final List<Integer> peerNodes;
     private final List<Integer> activeNodes;
+    private final Map<Integer, String> nodeAddresses;
     private NodeState currentState;
     private int term;
     private int votes;
@@ -50,7 +50,10 @@ public class Node {
     public Node() throws SocketException {
         this.nodeId = getEnvVariable("NODE_ID", 1);
         this.nodeAddress = getEnvVariable("NODE_ADDRESS", "localhost");
-        this.peerNodes = getPeerNodes("NODE_PEERS");
+        this.peerNodes = new ArrayList<>();
+        this.nodeAddresses = new HashMap<>();
+        getPeerNodes("NODE_PEERS");
+
         this.activeNodes = new ArrayList<>();
 
         clusterSize = peerNodes.size() + 1;
@@ -120,18 +123,28 @@ public class Node {
         return value;
     }
 
-    private List<Integer> getPeerNodes(String variableName) {
+    private void getPeerNodes(String variableName) {
         String value = System.getenv(variableName);
         if (value == null || value.isBlank()) {
-            LOGGER.log(Level.WARNING, "{0} is not set. Using empty peer list.", new Object[]{variableName});
-            return new ArrayList<>();
+            LOGGER.log(Level.WARNING, "{0} is not set.", variableName);
         }
-        try {
-            return Arrays.stream(value.split(",")).map(Integer::parseInt).collect(Collectors.toList());
-        } catch (NumberFormatException e) {
-            LOGGER.log(Level.SEVERE, "{0} is invalid. Using empty peer list.", new Object[]{variableName});
-            return new ArrayList<>();
-        }
+
+        Arrays.stream(value.split(",")).forEach(address -> {
+            String[] addressParts = address.split(":");
+            String host = addressParts[0];
+            int port = -1;
+
+            try {
+                port = Integer.parseInt(addressParts[1]);
+            } catch (NumberFormatException e) {
+                LOGGER.log(Level.SEVERE, "The port {0} is invalid. Skipping it...", new Object[]{addressParts[1]});
+            }
+
+            if (port >= 0) {
+                nodeAddresses.put(port, host);
+                peerNodes.add(port);
+            }
+        });
     }
 
     private void startUdpListener() {
@@ -271,12 +284,12 @@ public class Node {
 
             case "PING":
                 sendUdpMessage("PONG " + nodeId, senderPort);
-                LOGGER.log(Level.INFO, "Node {0} received PING from port {1}", new Object[]{nodeId, senderPort});
+//                LOGGER.log(Level.INFO, "Node {0} received PING from port {1}", new Object[]{nodeId, senderPort});
                 break;
 
             case "PONG":
                 activeNodes.add(senderPort);
-                LOGGER.log(Level.INFO, "Node {0} received PONG from port {1}", new Object[]{nodeId, senderPort});
+//                LOGGER.log(Level.INFO, "Node {0} received PONG from port {1}", new Object[]{nodeId, senderPort});
                 break;
 
             default:
@@ -288,7 +301,7 @@ public class Node {
         mainExecutor.submit(() -> {
             try {
                 byte[] buffer = message.getBytes();
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(nodeAddress), targetPort);
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(nodeAddresses.get(targetPort)), targetPort);
                 udpSocket.send(packet);
                 LOGGER.log(Level.INFO, "Node {0} sent: {1} to port {2}", new Object[]{nodeId, message, targetPort});
             } catch (Exception e) {
