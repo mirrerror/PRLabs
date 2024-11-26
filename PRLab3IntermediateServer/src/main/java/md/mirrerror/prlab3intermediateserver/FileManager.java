@@ -20,6 +20,11 @@ public class FileManager {
 
     public void uploadFileToServer(File file) {
         try {
+            if (!file.exists()) {
+                System.err.println("File does not exist.");
+                return;
+            }
+
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
@@ -28,15 +33,17 @@ public class FileManager {
 
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
-            int currentLeader = udpHandler.getCurrentLeader();
+            String currentLeaderHostname = udpHandler.getCurrentLeaderHostname();
+            int currentLeaderPort = udpHandler.getCurrentLeaderPort();
 
-            if (currentLeader >= 0) {
-                String uploadUrl = "http://localhost:" + currentLeader + "/products/upload";
+            if (currentLeaderPort >= 0 && currentLeaderHostname != null) {
+                String uploadUrl = "http://" + currentLeaderHostname + ":8080/products/upload";
+                System.out.println("Sending request to: " + uploadUrl);
 
                 RestTemplate restTemplate = new RestTemplate();
                 restTemplate.postForEntity(uploadUrl, requestEntity, String.class);
             } else {
-                System.out.println("No leader available to upload the file.");
+                System.err.println("No leader available to upload the file.");
             }
         } catch (Exception e) {
             e.printStackTrace();

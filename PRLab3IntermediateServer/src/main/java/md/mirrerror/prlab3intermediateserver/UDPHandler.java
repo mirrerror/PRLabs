@@ -11,12 +11,12 @@ import java.net.DatagramSocket;
 @Data
 public class UDPHandler implements Runnable {
 
-    private int currentLeader;
-    private int currentTerm;
+    private String currentLeaderHostname;
+    private int currentLeaderPort;
 
     public UDPHandler() {
-        currentLeader = -1;
-        currentTerm = -1;
+        currentLeaderHostname = null;
+        currentLeaderPort = -1;
         new Thread(this).start();
     }
 
@@ -41,15 +41,15 @@ public class UDPHandler implements Runnable {
     }
 
     private void handleMessage(String message) {
-        String[] parts = message.split(":");
+        String[] parts = message.split(" ");
         String type = parts[0];
-        int term = Integer.parseInt(parts[1]);
-        int senderId = Integer.parseInt(parts[2]);
 
         switch (type) {
-            case "Leader":
-                currentLeader = senderId;
-                currentTerm = term;
+            case "LEADER":
+                String[] fullAddress = parts[1].split(":");
+                currentLeaderHostname = fullAddress[0];
+                currentLeaderPort = Integer.parseInt(fullAddress[1]);
+                System.out.println("New leader: " + currentLeaderHostname + ":" + currentLeaderPort);
                 break;
         }
     }

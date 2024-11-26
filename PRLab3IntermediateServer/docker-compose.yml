@@ -35,6 +35,7 @@ services:
       RABBITMQ_PASSWORD: guest
     ports:
       - "8079:8080"
+      - "8999:8999/udp"
     networks:
       - app-network
 
