@@ -1,171 +1,111 @@
 package md.mirrerror.prlab3.raft;
 
-import lombok.Getter;
-import org.springframework.stereotype.Component;
-
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-@Getter
-@Component
 public class Node {
 
-    private static final Logger LOGGER = Logger.getLogger(Node.class.getName());
+    public enum NodeState {
+        LEADER,
+        CANDIDATE,
+        FOLLOWER
+    }
+
     private static final int BASE_TIMEOUT = 1000;
     private static final int TIMEOUT_VARIANCE = 1500;
     private static final int HEARTBEAT_INTERVAL = 3000;
-    private static final int BUFFER_SIZE = 2048;
-    private static final String[] NOT_LOGGED_COMMANDS = {"PING", "PONG"};
 
     private static int clusterSize;
 
-    private final int nodeId;
-    private final String nodeAddress;
-    private final String managementServerAddress;
-    private final int managementServerPort;
-    private final List<Integer> peerNodes;
-    private final List<Integer> activeNodes;
-    private final Map<Integer, String> nodeAddresses;
     private NodeState currentState;
-    private int term;
-    private int votes;
+    private DatagramSocket socket;
+    private final AtomicBoolean leaderAlive;
 
-    private final DatagramSocket udpSocket;
-    private final AtomicBoolean isLeaderAlive;
-
-    private final ScheduledExecutorService mainExecutor;
-    private final ScheduledExecutorService heartbeatTimeoutExecutor;
+    private final ScheduledExecutorService executor;
     private final ScheduledExecutorService electionExecutor;
     private ScheduledExecutorService heartbeatExecutor;
+    private final ScheduledExecutorService heartbeatTimeoutExecutor;
     private final ScheduledExecutorService scheduler;
     private ScheduledFuture<?> heartbeatTimeoutTask;
-    private final Object lock;
+    private final Object timerLock;
 
-    public Node() throws SocketException {
-        this.nodeId = getEnvVariable("NODE_ID", 1);
-        this.nodeAddress = getEnvVariable("NODE_ADDRESS", "localhost");
+    private final int nodeId;
+    private final int udpPort;
+    private final int springPort;
+    private final int[] peerPorts;
+    private final List<Integer> availablePeerPorts;
+    private final Map<Integer, String> addressMap;
+    private final int managementServerPort;
 
-        String[] managementServerFullAddress = getEnvVariable("MANAGEMENT_SERVER_ADDRESS", "localhost:8999").split(":");
-        this.managementServerAddress = managementServerFullAddress[0];
-        this.managementServerPort = Integer.parseInt(managementServerFullAddress[1]);
+    private int currentTerm;
+    private int votesGranted;
 
-        this.peerNodes = new ArrayList<>();
-        this.nodeAddresses = new HashMap<>();
-        getPeerNodes("NODE_PEERS");
+    public Node(int nodeId, int udpPort, int[] peerPorts, Map<Integer, String> addressMap, int managementServerPort, int springPort) {
+        this.nodeId = nodeId;
+        this.udpPort = udpPort;
+        this.peerPorts = peerPorts;
+        clusterSize = peerPorts.length + 1;
+        availablePeerPorts = new ArrayList<>();
+        this.addressMap = addressMap;
+        this.managementServerPort = managementServerPort;
+        this.springPort = springPort;
+        this.leaderAlive = new AtomicBoolean(false);
 
-        this.activeNodes = new ArrayList<>();
-
-        clusterSize = peerNodes.size() + 1;
-
-        this.currentState = NodeState.FOLLOWER;
-        this.term = 0;
-        this.votes = 0;
-
-        this.udpSocket = new DatagramSocket(getUdpPort());
-        this.isLeaderAlive = new AtomicBoolean(false);
-
-        this.mainExecutor = Executors.newScheduledThreadPool(1);
-        this.heartbeatTimeoutExecutor = Executors.newSingleThreadScheduledExecutor();
+        this.executor = Executors.newScheduledThreadPool(1);
         this.electionExecutor = Executors.newScheduledThreadPool(1);
         this.heartbeatExecutor = Executors.newScheduledThreadPool(1);
+        this.heartbeatTimeoutExecutor = Executors.newSingleThreadScheduledExecutor();
         this.scheduler = Executors.newScheduledThreadPool(1);
         this.heartbeatTimeoutTask = null;
-        this.lock = new Object();
+        this.timerLock = new Object();
 
-        LOGGER.log(Level.INFO, "Node initialized with ID: {0}, Peers: {1}, State: {2}, SpringApp Port: {3}, UDP Port: {4}, Address: {5}", new Object[]{nodeId, peerNodes, currentState, getPort(), getUdpPort(), nodeAddress});
+        this.currentTerm = 0;
+        this.votesGranted = 0;
 
-        initializeNode();
-    }
-
-    private void initializeNode() {
         try {
+            this.socket = new DatagramSocket(udpPort);
+
             startUdpListener();
             Thread.sleep(1000);
             findActiveNodes();
             Thread.sleep(1000);
-            LOGGER.log(Level.INFO, "Node {0} on port {1} discovered peers: {2}", new Object[]{nodeId, getPort(), activeNodes});
-            initiateElection();
+
+            System.out.println("Node " + nodeId + " has been initialized with the port " + udpPort + " and " + clusterSize + " peers. Available peer ports: " + availablePeerPorts);
+
+            if (availablePeerPorts.isEmpty()) {
+                currentState = NodeState.LEADER;
+                leaderAlive.set(true);
+                sendHeartbeats();
+            } else {
+                startElection();
+            }
+
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        } catch (SocketException e) {
+            e.printStackTrace();
         }
-    }
-
-    public int getPort() {
-        return 8080 + nodeId - 1;
-    }
-
-    public int getUdpPort() {
-        return 9000 + nodeId;
-    }
-
-    private int getEnvVariable(String variableName, int defaultValue) {
-        String value = System.getenv(variableName);
-        if (value == null) {
-            LOGGER.log(Level.WARNING, "{0} is not set. Using default value: {1}", new Object[]{variableName, defaultValue});
-            return defaultValue;
-        }
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            LOGGER.log(Level.SEVERE, "{0} is invalid. Using default value: {1}", new Object[]{variableName, defaultValue});
-            return defaultValue;
-        }
-    }
-
-    private String getEnvVariable(String variableName, String defaultValue) {
-        String value = System.getenv(variableName);
-        if (value == null) {
-            LOGGER.log(Level.WARNING, "{0} is not set. Using default value: {1}", new Object[]{variableName, defaultValue});
-            return defaultValue;
-        }
-        return value;
-    }
-
-    private void getPeerNodes(String variableName) {
-        String value = System.getenv(variableName);
-        if (value == null || value.isBlank()) {
-            LOGGER.log(Level.WARNING, "{0} is not set.", variableName);
-            return;
-        }
-
-        nodeAddresses.put(managementServerPort, managementServerAddress);
-
-        Arrays.stream(value.split(",")).forEach(address -> {
-            String[] addressParts = address.split(":");
-            String host = addressParts[0];
-            int port = -1;
-
-            try {
-                port = Integer.parseInt(addressParts[1]);
-            } catch (NumberFormatException e) {
-                LOGGER.log(Level.SEVERE, "The port {0} is invalid. Skipping it...", new Object[]{addressParts[1]});
-            }
-
-            if (port >= 0) {
-                nodeAddresses.put(port, host);
-                peerNodes.add(port);
-            }
-        });
     }
 
     private void startUdpListener() {
         new Thread(() -> {
-            LOGGER.log(Level.INFO, "Node {0} is listening on port {1}", new Object[]{nodeId, getUdpPort()});
+            System.out.println("Node " + nodeId + " has just started listening for UDP packets on the port " + udpPort);
             try {
-                byte[] buffer = new byte[BUFFER_SIZE];
+                byte[] buffer = new byte[1024];
                 while (true) {
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                    udpSocket.receive(packet);
+                    socket.receive(packet);
                     String message = new String(packet.getData(), 0, packet.getLength());
-                    processMessage(message, packet.getPort());
+                    handleMessage(message, packet.getPort());
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -173,35 +113,34 @@ public class Node {
         }).start();
     }
 
-    private void initiateElection() {
-        synchronized (lock) {
+    private void startElection() {
+        synchronized (timerLock) {
+
             if (currentState == NodeState.LEADER) {
-                LOGGER.log(Level.INFO, "Node {0}: Already a leader, skipping election.", nodeId);
+                System.out.println("Node " + nodeId + ": Already a leader, skipping election");
                 return;
             }
-            if (isLeaderAlive.get()) {
-                LOGGER.log(Level.INFO, "Node {0}: Election canceled as leader is active.", nodeId);
+            if (leaderAlive.get()) {
+                System.out.println("Node " + nodeId + ": Election canceled as leader is active");
                 return;
             }
 
             currentState = NodeState.CANDIDATE;
-            term++;
-            votes = 0;
-            isLeaderAlive.set(false);
+            currentTerm++;
+            votesGranted = 0;
+            leaderAlive.set(false);
 
-            LOGGER.log(Level.INFO, "Node {0} starting election for term {1}...", new Object[]{nodeId, term});
+            System.out.println("Node " + nodeId + " starting election for term " + currentTerm + "...");
 
-            int randomPort = peerNodes.get(new Random().nextInt(peerNodes.size()));
-            sendUdpMessage("VOTE for " + (randomPort - 9000) + " term " + term + " from " + nodeId + " with port " + getUdpPort(), randomPort);
-            restartHeartbeatTimeout();
+            int randomPort = peerPorts[new Random().nextInt(peerPorts.length)];
+            sendUdpMessage("VOTE for " + (randomPort - 9000) + " term " + currentTerm + " from " + nodeId + " with port " + udpPort, randomPort);
+            startOrRestartHeartbeatTimeout();
             electionExecutor.schedule(() -> {
-                if (votes > clusterSize / 2) {
+                if (votesGranted > clusterSize / 2) {
                     becomeLeader();
-                    LOGGER.log(Level.INFO, "Node {0} received {1} votes during term {2}", new Object[]{nodeId, votes, term});
                 } else {
-                    restartHeartbeatTimeout();
+                    startOrRestartHeartbeatTimeout();
                     currentState = NodeState.FOLLOWER;
-                    LOGGER.log(Level.INFO, "Node {0} received {1} votes during term {2}", new Object[]{nodeId, votes, term});
                 }
             }, BASE_TIMEOUT, TimeUnit.MILLISECONDS);
         }
@@ -209,117 +148,104 @@ public class Node {
 
     private void becomeLeader() {
         currentState = NodeState.LEADER;
-        isLeaderAlive.set(true);
+        leaderAlive.set(true);
         heartbeatTimeoutExecutor.shutdownNow();
-        LOGGER.log(Level.INFO, "Node {0} is now the leader for term {1}!", new Object[]{nodeId, term});
+        System.out.println("Node " + nodeId + " is now the leader for term " + currentTerm + "!");
 
-        for (int otherPort : peerNodes) {
-            sendUdpMessage("LEADER_ANNOUNCE " + nodeId + " " + term, otherPort);
+        for (int otherPort : peerPorts) {
+            sendUdpMessage("LEADER_ANNOUNCE " + nodeId + " " + currentTerm, otherPort);
         }
 
-        sendUdpMessage("LEADER " + getUdpPort(), 8999);
+        sendUdpMessage("LEADER " + addressMap.get(udpPort) + ":" + springPort, managementServerPort);
 
         sendHeartbeats();
     }
 
     private void sendHeartbeats() {
-        AtomicInteger heartbeatsSent = new AtomicInteger(0);
+        AtomicInteger sentHeartbeats = new AtomicInteger(0);
         heartbeatExecutor.scheduleAtFixedRate(() -> {
-            if (heartbeatsSent.get() >= 3) {
-                LOGGER.log(Level.INFO, "Node {0} is no longer the leader for term {1}!", new Object[]{nodeId, term});
-                isLeaderAlive.set(false);
+
+            if (sentHeartbeats.get() >= 3) {
+                System.out.println("Node " + nodeId + " is no longer the leader for term " + currentTerm + "!");
+                leaderAlive.set(false);
                 heartbeatExecutor.shutdown();
                 heartbeatExecutor = new ScheduledThreadPoolExecutor(1);
                 return;
             }
 
-            restartHeartbeatTimeout();
+            startOrRestartHeartbeatTimeout();
 
-            heartbeatsSent.incrementAndGet();
-            for (int otherPort : peerNodes) {
-                if (otherPort == getUdpPort()) continue;
-                sendUdpMessage("HEARTBEAT term: " + term + " nodeId: " + nodeId, otherPort);
+            sentHeartbeats.set(sentHeartbeats.get() + 1);
+            for (int otherPort : peerPorts) {
+                if (otherPort == udpPort) continue;
+                sendUdpMessage("HEARTBEAT term: " + currentTerm + " nodeId: " + nodeId, otherPort);
             }
 
         }, 0, HEARTBEAT_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
-    private void processMessage(String message, int senderPort) {
+    private void handleMessage(String message, int senderPort) {
         String[] parts = message.split(" ");
         String type = parts[0];
 
-        boolean isLogged = true;
-        for(String command : NOT_LOGGED_COMMANDS) {
-            if (type.equals(command)) {
-                isLogged = false;
-                break;
-            }
+        if (!message.startsWith("PING") && !message.startsWith("PONG")) {
+            System.out.println("Node " + nodeId + " has just received a message: " + message);
         }
-
-        if (isLogged)
-            LOGGER.log(Level.INFO, "Node {0} received message: {1}", new Object[]{nodeId, message});
 
         switch (type) {
             case "HEARTBEAT":
                 int leaderTerm = Integer.parseInt(parts[2]);
-                int leaderId = Integer.parseInt(parts[4]);
-                if (leaderTerm >= term) {
-                    isLeaderAlive.set(true);
+                if (leaderTerm >= currentTerm) {
+                    leaderAlive.set(true);
                     currentState = NodeState.FOLLOWER;
-                    term = leaderTerm;
-                    restartHeartbeatTimeout();
-                    LOGGER.log(Level.INFO, "Node {0}: Recognized leader {1} for term {2}", new Object[]{nodeId, leaderId, leaderTerm});
+                    currentTerm = leaderTerm;
+                    startOrRestartHeartbeatTimeout();
                 }
                 break;
-
             case "VOTE":
-                int voteTerm = Integer.parseInt(parts[4]);
-                int voterId = Integer.parseInt(parts[6]);
-                int voterPort = Integer.parseInt(parts[9]);
+                int term = Integer.parseInt(parts[4]);
 
-                if (voteTerm == term && currentState == NodeState.CANDIDATE) {
-                    votes++;
-                    if (votes >= clusterSize / 2) {
+                if (term == currentTerm && currentState == NodeState.CANDIDATE) {
+                    votesGranted++;
+                    if (votesGranted >= clusterSize / 2) {
                         becomeLeader();
                     }
-                    LOGGER.log(Level.INFO, "Node {0} received a vote from Node {1}, port: {2}", new Object[]{nodeId, voterId, voterPort});
                 }
                 break;
-
             case "LEADER_ANNOUNCE":
                 int newLeaderId = Integer.parseInt(parts[1]);
                 int newLeaderTerm = Integer.parseInt(parts[2]);
-                if (newLeaderTerm >= term) {
-                    isLeaderAlive.set(true);
+                if (newLeaderTerm >= currentTerm) {
+                    leaderAlive.set(true);
                     currentState = NodeState.FOLLOWER;
-                    term = newLeaderTerm;
+                    currentTerm = newLeaderTerm;
                     resetElectionTimer();
-                    LOGGER.log(Level.INFO, "Node {0}: Recognized new leader {1} for term {2}", new Object[]{nodeId, newLeaderId, newLeaderTerm});
+                    System.out.println("Node " + nodeId + ": Recognized new leader " + newLeaderId + " for term " + newLeaderTerm);
                 }
                 break;
-
             case "PING":
                 sendUdpMessage("PONG " + nodeId, senderPort);
-//                LOGGER.log(Level.INFO, "Node {0} received PING from port {1}", new Object[]{nodeId, senderPort});
                 break;
-
             case "PONG":
-                activeNodes.add(senderPort);
-//                LOGGER.log(Level.INFO, "Node {0} received PONG from port {1}", new Object[]{nodeId, senderPort});
+                availablePeerPorts.add(senderPort);
                 break;
-
             default:
-                LOGGER.log(Level.WARNING, "Unknown message type: {0}", message);
+                System.out.println("Unknown message type: " + message);
+                break;
         }
     }
 
     private void sendUdpMessage(String message, int targetPort) {
-        mainExecutor.submit(() -> {
+        executor.submit(() -> {
             try {
                 byte[] buffer = message.getBytes();
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(nodeAddresses.get(targetPort)), targetPort);
-                udpSocket.send(packet);
-                LOGGER.log(Level.INFO, "Node {0} sent: {1} to port {2}", new Object[]{nodeId, message, targetPort});
+
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(addressMap.get(targetPort)), targetPort);
+                socket.send(packet);
+                if (message.startsWith("PING") || message.startsWith("PONG") || message.startsWith("VOTE") || message.startsWith("LEADER_ANNOUNCE") || message.startsWith("HEARTBEAT"))
+                    return;
+
+                System.out.println("Node " + nodeId + " has just sent the message: \"" + message + "\" to the port: " + targetPort);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -327,33 +253,33 @@ public class Node {
     }
 
     private void resetElectionTimer() {
-        mainExecutor.schedule(() -> {
-            if (!isLeaderAlive.get() && currentState != NodeState.LEADER) {
-                initiateElection();
+        executor.schedule(() -> {
+            if (!leaderAlive.get() && currentState != NodeState.LEADER) {
+                startElection();
             }
         }, BASE_TIMEOUT + new Random().nextInt(TIMEOUT_VARIANCE), TimeUnit.MILLISECONDS);
     }
 
     public void findActiveNodes() {
-        mainExecutor.submit(() -> {
-            LOGGER.log(Level.INFO, "Node {0} on port {1}: Starting sending PING to all other nodes...", new Object[]{nodeId, getUdpPort()});
-            for (int targetPort : peerNodes) {
+        executor.submit(() -> {
+            System.out.println("Node " + nodeId + " on the port " + udpPort + ": Pinging all the other nodes...");
+            for (int targetPort : peerPorts) {
                 sendUdpMessage("PING " + nodeId, targetPort);
             }
         });
     }
 
-    private void restartHeartbeatTimeout() {
-        synchronized (lock) {
+    private void startOrRestartHeartbeatTimeout() {
+        synchronized (timerLock) {
             if (heartbeatTimeoutTask != null && !heartbeatTimeoutTask.isDone()) {
                 heartbeatTimeoutTask.cancel(false);
             }
 
             heartbeatTimeoutTask = scheduler.schedule(() -> {
-                LOGGER.log(Level.INFO, "Node {0}: Heartbeat timeout! Starting an election...", nodeId);
-                isLeaderAlive.set(false);
+                System.out.println("Node " + nodeId + ": Heartbeat timeout! Starting election...");
+                leaderAlive.set(false);
 
-                initiateElection();
+                startElection();
             }, HEARTBEAT_INTERVAL * 2, TimeUnit.MILLISECONDS);
         }
     }

@@ -3,7 +3,7 @@ version: '3.8'
 services:
   db:
     image: mysql:8.0
-    container_name: my_database
+    container_name: database
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
       MYSQL_ROOT_PASSWORD: ''
@@ -18,7 +18,7 @@ services:
       - app-network
   app1:
     image: prlab3
-    container_name: spring_app_1
+    container_name: springapp1
     depends_on:
       - db
     environment:
@@ -28,9 +28,10 @@ services:
       SPRING_DATASOURCE_USERNAME: 'root'
       MAILERSEND_API_KEY: 'PASTE THE TOKEN HERE'
       NODE_ID: 1
-      NODE_PEERS: 'spring_app_2:9002,spring_app_3:9003'
-      NODE_ADDRESS: 'spring_app_1'
-      MANAGEMENT_SERVER_ADDRESS: 'localhost:8999'
+      NODE_PEERS: 'springapp2:9002,springapp3:9003'
+      NODE_ADDRESS: 'springapp1'
+      MANAGEMENT_SERVER_ADDRESS: 'intermediary_server:8999'
+      SPRING_PORT: 8080
     ports:
       - "8080:8080"
       - "9001:9001/udp"
@@ -38,7 +39,7 @@ services:
       - app-network
   app2:
     image: prlab3
-    container_name: spring_app_2
+    container_name: springapp2
     depends_on:
       - db
     environment:
@@ -48,9 +49,10 @@ services:
       SPRING_DATASOURCE_USERNAME: 'root'
       MAILERSEND_API_KEY: 'PASTE THE TOKEN HERE'
       NODE_ID: 2
-      NODE_PEERS: 'spring_app_1:9001,spring_app_3:9003'
-      NODE_ADDRESS: 'spring_app_2'
-      MANAGEMENT_SERVER_ADDRESS: 'localhost:8999'
+      NODE_PEERS: 'springapp1:9001,springapp3:9003'
+      NODE_ADDRESS: 'springapp2'
+      MANAGEMENT_SERVER_ADDRESS: 'intermediary_server:8999'
+      SPRING_PORT: 8081
     ports:
       - "8081:8080"
       - "9002:9002/udp"
@@ -58,7 +60,7 @@ services:
       - app-network
   app3:
     image: prlab3
-    container_name: spring_app_3
+    container_name: springapp3
     depends_on:
       - db
     environment:
@@ -68,17 +70,59 @@ services:
       SPRING_DATASOURCE_USERNAME: 'root'
       MAILERSEND_API_KEY: 'PASTE THE TOKEN HERE'
       NODE_ID: 3
-      NODE_PEERS: 'spring_app_1:9001,spring_app_2:9002'
-      NODE_ADDRESS: 'spring_app_3'
-      MANAGEMENT_SERVER_ADDRESS: 'localhost:8999'
+      NODE_PEERS: 'springapp1:9001,springapp2:9002'
+      NODE_ADDRESS: 'springapp3'
+      MANAGEMENT_SERVER_ADDRESS: 'intermediary_server:8999'
+      SPRING_PORT: 8082
     ports:
       - "8082:8080"
       - "9003:9003/udp"
     networks:
       - app-network
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: intermediary_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app-network
+  ftp_server:
+    image: stilliard/pure-ftpd:hardened
+    container_name: intermediary_ftp_server
+    ports:
+      - "21:21"
+      - "30000-30009:30000-30009"
+    environment:
+      FTP_USER_NAME: testuser
+      FTP_USER_PASS: testpass
+      FTP_USER_HOME: /home/testuser
+    volumes:
+      - ftp_data:/home/testuser
+    networks:
+      - app-network
+  management_server:
+    image: prlab3_intermediary_server
+    container_name: intermediary_server
+    depends_on:
+      - rabbitmq
+      - ftp_server
+      - app1
+      - app2
+      - app3
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+    ports:
+      - "8079:8080"
+      - "8999:8999/udp"
+    networks:
+      - app-network
 
 volumes:
   db_data:
+  ftp_data:
 
 networks:
   app-network:
