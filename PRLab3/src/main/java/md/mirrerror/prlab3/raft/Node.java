@@ -22,7 +22,8 @@ public class Node {
     private static final int BASE_TIMEOUT = 1000;
     private static final int TIMEOUT_VARIANCE = 1500;
     private static final int HEARTBEAT_INTERVAL = 3000;
-    public static final int BUFFER_SIZE = 2048;
+    private static final int BUFFER_SIZE = 2048;
+    private static final String[] NOT_LOGGED_COMMANDS = {"PING", "PONG"};
 
     private static int clusterSize;
 
@@ -241,7 +242,16 @@ public class Node {
         String[] parts = message.split(" ");
         String type = parts[0];
 
-        LOGGER.log(Level.INFO, "Node {0} received message: {1}", new Object[]{nodeId, message});
+        boolean isLogged = true;
+        for(String command : NOT_LOGGED_COMMANDS) {
+            if (type.equals(command)) {
+                isLogged = false;
+                break;
+            }
+        }
+
+        if (isLogged)
+            LOGGER.log(Level.INFO, "Node {0} received message: {1}", new Object[]{nodeId, message});
 
         switch (type) {
             case "HEARTBEAT":
