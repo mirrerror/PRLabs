@@ -35,7 +35,6 @@ public class Node {
     private NodeState currentState;
     private int term;
     private int votes;
-    private int heartbeatsSent;
 
     private final DatagramSocket udpSocket;
     private final AtomicBoolean isLeaderAlive;
@@ -62,7 +61,6 @@ public class Node {
         this.currentState = NodeState.FOLLOWER;
         this.term = 0;
         this.votes = 0;
-        this.heartbeatsSent = 0;
 
         this.udpSocket = new DatagramSocket(getUdpPort());
         this.isLeaderAlive = new AtomicBoolean(false);
@@ -184,7 +182,7 @@ public class Node {
             LOGGER.log(Level.INFO, "Node {0} starting election for term {1}...", new Object[]{nodeId, term});
 
             int randomPort = peerNodes.get(new Random().nextInt(peerNodes.size()));
-            sendUdpMessage("VOTE for " + (randomPort - 8999) + " term " + term + " from " + nodeId + " with port " + getUdpPort(), randomPort);
+            sendUdpMessage("VOTE for " + (randomPort - 9000) + " term " + term + " from " + nodeId + " with port " + getUdpPort(), randomPort);
             restartHeartbeatTimeout();
             electionExecutor.schedule(() -> {
                 if (votes > clusterSize / 2) {
@@ -210,8 +208,6 @@ public class Node {
         }
 
         sendUdpMessage("LEADER " + getUdpPort(), 8999);
-
-        heartbeatsSent = 0;
 
         sendHeartbeats();
     }
