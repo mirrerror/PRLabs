@@ -29,6 +29,8 @@ public class Node {
 
     private final int nodeId;
     private final String nodeAddress;
+    private final String managementServerAddress;
+    private final int managementServerPort;
     private final List<Integer> peerNodes;
     private final List<Integer> activeNodes;
     private final Map<Integer, String> nodeAddresses;
@@ -50,6 +52,11 @@ public class Node {
     public Node() throws SocketException {
         this.nodeId = getEnvVariable("NODE_ID", 1);
         this.nodeAddress = getEnvVariable("NODE_ADDRESS", "localhost");
+
+        String[] managementServerFullAddress = getEnvVariable("MANAGEMENT_SERVER_ADDRESS", "localhost:8999").split(":");
+        this.managementServerAddress = managementServerFullAddress[0];
+        this.managementServerPort = Integer.parseInt(managementServerFullAddress[1]);
+
         this.peerNodes = new ArrayList<>();
         this.nodeAddresses = new HashMap<>();
         getPeerNodes("NODE_PEERS");
@@ -128,6 +135,8 @@ public class Node {
             LOGGER.log(Level.WARNING, "{0} is not set.", variableName);
             return;
         }
+
+        nodeAddresses.put(managementServerPort, managementServerAddress);
 
         Arrays.stream(value.split(",")).forEach(address -> {
             String[] addressParts = address.split(":");
