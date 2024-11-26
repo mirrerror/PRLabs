@@ -126,6 +126,7 @@ public class Node {
         String value = System.getenv(variableName);
         if (value == null || value.isBlank()) {
             LOGGER.log(Level.WARNING, "{0} is not set.", variableName);
+            return;
         }
 
         Arrays.stream(value.split(",")).forEach(address -> {
