@@ -28,7 +28,7 @@ services:
       SPRING_DATASOURCE_USERNAME: 'root'
       MAILERSEND_API_KEY: 'PASTE THE TOKEN HERE'
       NODE_ID: 1
-      NODE_PEERS: 'springapp2:9002,springapp3:9003'
+      NODE_PEERS: 'springapp2:9002,springapp3:9003,springapp4:9004'
       NODE_ADDRESS: 'springapp1'
       MANAGEMENT_SERVER_ADDRESS: 'intermediary_server:8999'
       SPRING_PORT: 8080
@@ -49,7 +49,7 @@ services:
       SPRING_DATASOURCE_USERNAME: 'root'
       MAILERSEND_API_KEY: 'PASTE THE TOKEN HERE'
       NODE_ID: 2
-      NODE_PEERS: 'springapp1:9001,springapp3:9003'
+      NODE_PEERS: 'springapp1:9001,springapp3:9003,springapp4:9004'
       NODE_ADDRESS: 'springapp2'
       MANAGEMENT_SERVER_ADDRESS: 'intermediary_server:8999'
       SPRING_PORT: 8081
@@ -70,13 +70,34 @@ services:
       SPRING_DATASOURCE_USERNAME: 'root'
       MAILERSEND_API_KEY: 'PASTE THE TOKEN HERE'
       NODE_ID: 3
-      NODE_PEERS: 'springapp1:9001,springapp2:9002'
+      NODE_PEERS: 'springapp1:9001,springapp2:9002,springapp4:9004'
       NODE_ADDRESS: 'springapp3'
       MANAGEMENT_SERVER_ADDRESS: 'intermediary_server:8999'
       SPRING_PORT: 8082
     ports:
       - "8082:8080"
       - "9003:9003/udp"
+    networks:
+      - app-network
+  app4:
+    image: prlab3
+    container_name: springapp4
+    depends_on:
+      - db
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      SPRING_DATASOURCE_URL: 'jdbc:mysql://db:3306/prlab3'
+      SPRING_DATASOURCE_PASSWORD: ''
+      SPRING_DATASOURCE_USERNAME: 'root'
+      MAILERSEND_API_KEY: 'PASTE THE TOKEN HERE'
+      NODE_ID: 4
+      NODE_PEERS: 'springapp1:9001,springapp2:9002,springapp3:9003'
+      NODE_ADDRESS: 'springapp4'
+      MANAGEMENT_SERVER_ADDRESS: 'intermediary_server:8999'
+      SPRING_PORT: 8083
+    ports:
+      - "8083:8080"
+      - "9004:9004/udp"
     networks:
       - app-network
   rabbitmq:
@@ -110,6 +131,7 @@ services:
       - app1
       - app2
       - app3
+      - app4
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_USERNAME: guest
